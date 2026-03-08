@@ -6,6 +6,7 @@ import DuelModeLoading from './components/DuelModeLoading'
 import Home from './pages/Home'
 import Game from './pages/Game'
 import CharacterSelect from './pages/CharacterSelect'
+import Duel from './pages/Duel'
 
 function App() {
   const [isInitialLoading, setIsInitialLoading] = useState(true)
@@ -36,6 +37,7 @@ function App() {
         <Route path="/game" element={<Game />} />
         <Route path="/duel-loading" element={<DuelModeLoading />} />
         <Route path="/character-select" element={<CharacterSelect />} />
+        <Route path="/duel" element={<Duel />} />
       </Routes>
     </>
   )

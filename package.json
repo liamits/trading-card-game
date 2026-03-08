@@ -8,7 +8,8 @@
     "dev:server": "cd server && npm run dev",
     "build": "vite build",
     "preview": "vite preview",
-    "server:seed": "cd server && node seed.js"
+    "server:seed": "cd server && node seed.js",
+    "server:update-decks": "cd server && node updateDecks.js"
   },
   "dependencies": {
     "react": "^18.2.0",
