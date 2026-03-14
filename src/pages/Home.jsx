@@ -17,6 +17,8 @@ function Home() {
   const navigate = useNavigate()
   const [articles, setArticles] = useState([])
   const [loading, setLoading] = useState(true)
+  const [search, setSearch] = useState('')
+  const [activeCategory, setActiveCategory] = useState('all')
 
   useEffect(() => {
     fetch('http://localhost:5000/api/articles')
@@ -25,6 +27,12 @@ function Home() {
       .catch(() => setArticles(FALLBACK_ARTICLES))
       .finally(() => setLoading(false))
   }, [])
+
+  const filtered = articles.filter(a => {
+    const matchCat = activeCategory === 'all' || a.category === activeCategory
+    const matchSearch = !search || a.title.toLowerCase().includes(search.toLowerCase()) || a.desc.toLowerCase().includes(search.toLowerCase())
+    return matchCat && matchSearch
+  })
 
   return (
     <div className="home-page">
@@ -62,17 +70,41 @@ function Home() {
         </div>
       </div>
 
-      {/* Category Filter */}
+      {/* Articles Section */}
       <div className="home-content">
-        <div className="section-title">
+        <div className="articles-header">
           <h2>📰 Bài viết & Hướng dẫn</h2>
+          <div className="home-search">
+            <span className="home-search-icon">🔍</span>
+            <input
+              className="home-search-input"
+              placeholder="Tìm kiếm bài viết..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+            />
+            {search && <button className="home-search-clear" onClick={() => setSearch('')}>✕</button>}
+          </div>
+        </div>
+
+        {/* Category tabs */}
+        <div className="home-cat-tabs">
+          <button className={`home-cat-tab ${activeCategory === 'all' ? 'active' : ''}`} onClick={() => setActiveCategory('all')}>
+            Tất cả
+          </button>
+          {navItems.map(cat => (
+            <button key={cat} className={`home-cat-tab ${activeCategory === cat ? 'active' : ''}`} onClick={() => setActiveCategory(cat)}>
+              {cat}
+            </button>
+          ))}
         </div>
 
         {/* Articles Grid */}
         <div className="articles-grid">
           {loading ? (
             <div className="home-loading">Đang tải bài viết...</div>
-          ) : articles.map(article => (
+          ) : filtered.length === 0 ? (
+            <div className="home-no-results">Không tìm thấy bài viết nào 🃏</div>
+          ) : filtered.map(article => (
             <div key={article._id} className="article-card" style={{ '--accent': article.color || '#8ab4f8' }}>
               <div className="article-image">
                 <img src={article.image} alt={article.title} />
