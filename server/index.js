@@ -3,6 +3,7 @@ import mongoose from 'mongoose'
 import cors from 'cors'
 import dotenv from 'dotenv'
 import characterRoutes from './routes/characters.js'
+import articleRoutes from './routes/articles.js'
 
 dotenv.config()
 
@@ -14,6 +15,7 @@ app.use(express.json())
 
 // Routes
 app.use('/api/characters', characterRoutes)
+app.use('/api/articles', articleRoutes)
 
 // MongoDB Connection
 mongoose.connect(process.env.MONGODB_URI)

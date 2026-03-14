@@ -131,11 +131,6 @@ function Home() {
             </button>
           </div>
         </div>
-        <div className="hero-characters">
-          <img src="/image/yamiyugi_pfp.webp" alt="Yami Yugi" className="hero-char char-1" />
-          <img src="/image/setokaiba_pfp.webp" alt="Kaiba" className="hero-char char-2" />
-          <img src="/image/joey_pfp.webp" alt="Joey" className="hero-char char-3" />
-        </div>
       </div>
 
       {/* Category Filter */}

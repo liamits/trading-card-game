@@ -6,6 +6,7 @@ import Game from './pages/Game'
 import CharacterSelect from './pages/CharacterSelect'
 import Duel from './pages/Duel'
 import CardSearch from './pages/CardSearch'
+import Admin from './pages/Admin'
 
 function App() {
   const location = useLocation()
@@ -16,6 +17,7 @@ function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/cards" element={<CardSearch />} />
+        <Route path="/admin" element={<Admin />} />
         <Route path="/game" element={<Game />} />
         <Route path="/duel-loading" element={<DuelModeLoading />} />
         <Route path="/character-select" element={<CharacterSelect />} />

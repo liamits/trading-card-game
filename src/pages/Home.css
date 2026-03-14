@@ -110,18 +110,17 @@
   align-items: center;
   justify-content: space-between;
   padding: 60px 64px;
-  background: linear-gradient(135deg, #0d1235 0%, #1a1040 50%, #0d1235 100%);
   border-bottom: 1px solid rgba(138, 180, 248, 0.15);
   overflow: hidden;
-  min-height: 280px;
+  min-height: 320px;
+  background: url('/image/banner.webp') center center / cover no-repeat;
 }
 
 .hero-banner::before {
   content: '';
   position: absolute;
   inset: 0;
-  background: radial-gradient(ellipse at 30% 50%, rgba(138, 180, 248, 0.08) 0%, transparent 60%),
-              radial-gradient(ellipse at 70% 50%, rgba(197, 138, 249, 0.08) 0%, transparent 60%);
+  background: linear-gradient(135deg, rgba(10, 14, 39, 0.82) 0%, rgba(26, 16, 64, 0.7) 50%, rgba(10, 14, 39, 0.82) 100%);
 }
 
 .hero-content {
