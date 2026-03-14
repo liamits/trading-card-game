@@ -13,10 +13,11 @@ import ProtectedRoute from './components/ProtectedRoute'
 
 function App() {
   const location = useLocation()
+  const isDuelMode = ['/game', '/duel-loading', '/character-select', '/duel'].includes(location.pathname)
 
   return (
     <>
-      <BackgroundMusic />
+      {isDuelMode && <BackgroundMusic />}
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/cards" element={<CardSearch />} />
