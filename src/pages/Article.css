@@ -81,9 +81,9 @@
 
 /* Container */
 .art-container {
-  max-width: 1100px;
+  max-width: 1400px;
   margin: 0 auto;
-  padding: 28px 32px 60px;
+  padding: 28px 48px 60px;
 }
 
 /* Breadcrumb */
@@ -104,8 +104,8 @@
 /* Layout */
 .art-layout {
   display: grid;
-  grid-template-columns: 1fr 300px;
-  gap: 28px;
+  grid-template-columns: 1fr 280px;
+  gap: 24px;
   align-items: start;
 }
 
@@ -118,7 +118,7 @@
 }
 
 .art-header {
-  padding: 28px 32px 20px;
+  padding: 32px 40px 24px;
 }
 
 .art-cat-badge {
@@ -132,7 +132,7 @@
 }
 
 .art-header h1 {
-  font-size: 28px;
+  font-size: 32px;
   font-weight: 800;
   color: #e8eaed;
   line-height: 1.35;
@@ -148,7 +148,7 @@
 
 .art-cover {
   width: 100%;
-  max-height: 400px;
+  max-height: 520px;
   overflow: hidden;
 }
 .art-cover img {
@@ -159,8 +159,8 @@
 }
 
 .art-desc {
-  padding: 20px 32px;
-  font-size: 16px;
+  padding: 20px 40px;
+  font-size: 17px;
   color: #c8cace;
   line-height: 1.7;
   border-bottom: 1px solid rgba(255,255,255,0.06);
@@ -169,13 +169,13 @@
 }
 
 .art-content {
-  padding: 24px 32px 32px;
+  padding: 28px 40px 40px;
 }
 .art-content p {
-  font-size: 15px;
+  font-size: 16px;
   color: #c8cace;
-  line-height: 1.8;
-  margin: 0 0 16px;
+  line-height: 1.9;
+  margin: 0 0 18px;
 }
 
 .art-no-content {
@@ -237,7 +237,7 @@
 }
 .art-play-btn:hover { opacity: 0.9; transform: translateY(-1px); }
 
-@media (max-width: 800px) {
+@media (max-width: 900px) {
   .art-layout { grid-template-columns: 1fr; }
   .art-header { padding: 20px; }
   .art-header h1 { font-size: 22px; }
