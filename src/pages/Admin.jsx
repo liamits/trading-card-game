@@ -16,11 +16,22 @@ const emptyArticle = {
 }
 
 export default function Admin() {
+  const navigate = useNavigate()
   const [page, setPage] = useState('articles') // 'articles' | 'categories' | 'settings'
   const [articles, setArticles] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [toast, setToast] = useState('')
+
+  const token = localStorage.getItem('admin_token')
+  const username = localStorage.getItem('admin_user') || 'admin'
+  const authHeaders = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }
+
+  const handleLogout = () => {
+    localStorage.removeItem('admin_token')
+    localStorage.removeItem('admin_user')
+    navigate('/login')
+  }
 
   // Article form
   const [showForm, setShowForm] = useState(false)
@@ -78,7 +89,7 @@ export default function Admin() {
       const url = editingId ? `${API_ARTICLES}/${editingId}` : API_ARTICLES
       const res = await fetch(url, {
         method,
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders,
         body: JSON.stringify(form)
       })
       if (!res.ok) throw new Error()
@@ -103,7 +114,7 @@ export default function Admin() {
 
   const handleDelete = async (id) => {
     try {
-      await fetch(`${API_ARTICLES}/${id}`, { method: 'DELETE' })
+      await fetch(`${API_ARTICLES}/${id}`, { method: 'DELETE', headers: authHeaders })
       setArticles(articles.filter(a => a._id !== id))
       setDeleteConfirm(null)
       showToast('🗑️ Đã xóa bài viết')
@@ -114,7 +125,7 @@ export default function Admin() {
     try {
       const res = await fetch(`${API_ARTICLES}/${a._id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders,
         body: JSON.stringify({ ...a, published: !a.published })
       })
       const updated = await res.json()
@@ -202,9 +213,17 @@ export default function Admin() {
             <span className="stat-num">{categories.length}</span>
           </div>
         </div>
-      </aside>
 
-      {/* Main */}
+        <div className="admin-user">
+          <div className="admin-user-info">
+            <span className="admin-user-avatar">👤</span>
+            <span className="admin-user-name">{username}</span>
+          </div>
+          <button className="admin-logout-btn" onClick={handleLogout} title="Đăng xuất">
+            ⏻
+          </button>
+        </div>
+      </aside>
       <main className="admin-main">
         {error && <div className="admin-error" onClick={() => setError('')}>{error} ✕</div>}
         {toast && <div className="admin-toast">{toast}</div>}
