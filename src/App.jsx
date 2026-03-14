@@ -8,6 +8,7 @@ import Duel from './pages/Duel'
 import CardSearch from './pages/CardSearch'
 import Admin from './pages/Admin'
 import Login from './pages/Login'
+import Article from './pages/Article'
 import ProtectedRoute from './components/ProtectedRoute'
 
 function App() {
@@ -20,6 +21,7 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/cards" element={<CardSearch />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/article/:id" element={<Article />} />
         <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
         <Route path="/game" element={<Game />} />
         <Route path="/duel-loading" element={<DuelModeLoading />} />

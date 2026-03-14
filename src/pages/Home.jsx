@@ -1,94 +1,30 @@
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import './Home.css'
 
-const articles = [
-  {
-    id: 1,
-    category: 'TIER LIST',
-    title: 'Tier List Tháng 3/2026',
-    desc: 'Bảng xếp hạng các deck mạnh nhất hiện tại trong meta',
-    updated: '2 ngày trước',
-    image: '/image/yamiyugi_pfp.webp',
-    color: '#8ab4f8'
-  },
-  {
-    id: 2,
-    category: 'TOP DECKS',
-    title: 'Top Decks: Dark Magician',
-    desc: 'Hướng dẫn xây dựng và chơi deck Dark Magician hiệu quả nhất',
-    updated: '5 giờ trước',
-    image: '/image/yugimuto_pfp.webp',
-    color: '#c58af9'
-  },
-  {
-    id: 3,
-    category: 'TOP DECKS',
-    title: 'Top Decks: Blue-Eyes White Dragon',
-    desc: 'Chiến lược và combo mạnh nhất với Blue-Eyes White Dragon',
-    updated: '5 giờ trước',
-    image: '/image/setokaiba_pfp.webp',
-    color: '#8ab4f8'
-  },
-  {
-    id: 4,
-    category: 'FARMING & EVENTS',
-    title: 'Farming Guide: Yami Yugi',
-    desc: 'Cách farm hiệu quả nhất để lấy các lá bài hiếm từ Yami Yugi',
-    updated: '2 sự kiện đang diễn ra',
-    image: '/image/yamiyugi_pfp.webp',
-    color: '#ff77c6'
-  },
-  {
-    id: 5,
-    category: 'LEAKS & UPDATES',
-    title: 'Cập nhật mới nhất: Banlist tháng 3',
-    desc: 'Danh sách các lá bài bị cấm và hạn chế trong tháng 3/2026',
-    updated: '16 ngày trước',
-    image: '/image/marik_pfp.webp',
-    color: '#c58af9'
-  },
-  {
-    id: 6,
-    category: 'GUIDES',
-    title: 'Hướng dẫn cho người mới bắt đầu',
-    desc: 'Tất cả những gì bạn cần biết để bắt đầu chơi Yu-Gi-Oh!',
-    updated: '1 tháng trước',
-    image: '/image/joey_pfp.webp',
-    color: '#8ab4f8'
-  },
-  {
-    id: 7,
-    category: 'TOP DECKS',
-    title: 'Top Decks: Exodia',
-    desc: 'Xây dựng deck Exodia và chiến lược rút bài nhanh nhất',
-    updated: '3 ngày trước',
-    image: '/image/pegasus_pfp.webp',
-    color: '#ff77c6'
-  },
-  {
-    id: 8,
-    category: 'GUIDES',
-    title: 'Hướng dẫn Fusion Summon',
-    desc: 'Tất cả về Fusion Summon: cách thực hiện, các combo mạnh nhất',
-    updated: '1 tuần trước',
-    image: '/image/bakura_pfp.webp',
-    color: '#c58af9'
-  },
-  {
-    id: 9,
-    category: 'LEAKS & UPDATES',
-    title: 'Các lá bài mới sắp ra mắt',
-    desc: 'Danh sách các lá bài mới được xác nhận sẽ ra mắt trong thời gian tới',
-    updated: '3 ngày trước',
-    image: '/image/ishuzu_pfp.webp',
-    color: '#8ab4f8'
-  }
+const FALLBACK_ARTICLES = [
+  { _id: '1', category: 'TIER LIST', title: 'Tier List Tháng 3/2026', desc: 'Bảng xếp hạng các deck mạnh nhất hiện tại trong meta', createdAt: new Date(), image: '/image/yamiyugi_pfp.webp', color: '#8ab4f8' },
+  { _id: '2', category: 'TOP DECKS', title: 'Top Decks: Dark Magician', desc: 'Hướng dẫn xây dựng và chơi deck Dark Magician hiệu quả nhất', createdAt: new Date(), image: '/image/yugimuto_pfp.webp', color: '#c58af9' },
+  { _id: '3', category: 'TOP DECKS', title: 'Top Decks: Blue-Eyes White Dragon', desc: 'Chiến lược và combo mạnh nhất với Blue-Eyes White Dragon', createdAt: new Date(), image: '/image/setokaiba_pfp.webp', color: '#8ab4f8' },
+  { _id: '4', category: 'FARMING & EVENTS', title: 'Farming Guide: Yami Yugi', desc: 'Cách farm hiệu quả nhất để lấy các lá bài hiếm từ Yami Yugi', createdAt: new Date(), image: '/image/yamiyugi_pfp.webp', color: '#ff77c6' },
+  { _id: '5', category: 'LEAKS & UPDATES', title: 'Cập nhật mới nhất: Banlist tháng 3', desc: 'Danh sách các lá bài bị cấm và hạn chế trong tháng 3/2026', createdAt: new Date(), image: '/image/marik_pfp.webp', color: '#c58af9' },
+  { _id: '6', category: 'GUIDES', title: 'Hướng dẫn cho người mới bắt đầu', desc: 'Tất cả những gì bạn cần biết để bắt đầu chơi Yu-Gi-Oh!', createdAt: new Date(), image: '/image/joey_pfp.webp', color: '#8ab4f8' },
 ]
 
 const navItems = ['TIER LIST', 'TOP DECKS', 'FARMING & EVENTS', 'LEAKS & UPDATES', 'GUIDES']
 
 function Home() {
   const navigate = useNavigate()
+  const [articles, setArticles] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetch('http://localhost:5000/api/articles')
+      .then(r => r.json())
+      .then(data => setArticles(Array.isArray(data) && data.length > 0 ? data : FALLBACK_ARTICLES))
+      .catch(() => setArticles(FALLBACK_ARTICLES))
+      .finally(() => setLoading(false))
+  }, [])
 
   return (
     <div className="home-page">
@@ -141,8 +77,10 @@ function Home() {
 
         {/* Articles Grid */}
         <div className="articles-grid">
-          {articles.map(article => (
-            <div key={article.id} className="article-card" style={{ '--accent': article.color }}>
+          {loading ? (
+            <div className="home-loading">Đang tải bài viết...</div>
+          ) : articles.map(article => (
+            <div key={article._id} className="article-card" style={{ '--accent': article.color || '#8ab4f8' }}>
               <div className="article-image">
                 <img src={article.image} alt={article.title} />
                 <div className="article-overlay" />
@@ -151,7 +89,12 @@ function Home() {
               <div className="article-body">
                 <h3>{article.title}</h3>
                 <p>{article.desc}</p>
-                <span className="article-updated">🕐 {article.updated}</span>
+                <div className="article-footer">
+                  <span className="article-updated">🕐 {new Date(article.createdAt).toLocaleDateString('vi-VN')}</span>
+                  <button className="article-read-btn" onClick={() => navigate(`/article/${article._id}`)}>
+                    Đọc thêm →
+                  </button>
+                </div>
               </div>
             </div>
           ))}

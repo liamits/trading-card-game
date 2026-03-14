@@ -490,3 +490,47 @@
   border-color: rgba(248,81,73,0.4);
   background: rgba(248,81,73,0.1);
 }
+
+/* ── UPLOAD ── */
+.upload-area {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.upload-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: rgba(138,180,248,0.1);
+  border: 1px dashed rgba(138,180,248,0.4);
+  border-radius: 6px;
+  color: #8ab4f8;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.upload-btn:hover {
+  background: rgba(138,180,248,0.18);
+  border-color: #8ab4f8;
+}
+
+.upload-hint {
+  font-size: 11px;
+  color: #484f58;
+}
+
+.img-preview {
+  width: 80px;
+  height: 80px;
+  border-radius: 8px;
+  object-fit: cover;
+  margin-top: 8px;
+  border: 1px solid #30363d;
+  display: block;
+}

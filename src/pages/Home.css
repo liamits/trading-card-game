@@ -397,3 +397,32 @@
   .articles-grid { grid-template-columns: 1fr; }
   .hero-content h1 { font-size: 28px; }
 }
+
+.home-loading {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 48px;
+  color: #9aa0a6;
+  font-size: 14px;
+}
+
+.article-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 8px;
+}
+
+.article-read-btn {
+  background: none;
+  border: none;
+  color: var(--accent, #8ab4f8);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0;
+  transition: opacity 0.2s;
+  white-space: nowrap;
+}
+
+.article-read-btn:hover { opacity: 0.7; }

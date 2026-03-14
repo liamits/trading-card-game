@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import './Admin.css'
 
 const API_ARTICLES = 'http://localhost:5000/api/articles'
+const API_ADMIN_ARTICLES = 'http://localhost:5000/api/admin/articles'
 const CATEGORIES_DEFAULT = ['TIER LIST', 'TOP DECKS', 'FARMING & EVENTS', 'LEAKS & UPDATES', 'GUIDES']
 const COLORS = ['#8ab4f8', '#c58af9', '#ff77c6', '#51cf66', '#ffd43b']
 const IMAGES = [
@@ -71,7 +73,9 @@ export default function Admin() {
   const fetchArticles = async () => {
     try {
       setLoading(true)
-      const res = await fetch(API_ARTICLES)
+      const res = await fetch(API_ADMIN_ARTICLES, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
       const data = await res.json()
       setArticles(Array.isArray(data) ? data : [])
     } catch {
@@ -474,10 +478,34 @@ export default function Admin() {
               <div className="form-row-2">
                 <div className="form-group">
                   <label>Ảnh đại diện</label>
-                  <select className="admin-input" value={form.image}
-                    onChange={e => setForm({ ...form, image: e.target.value })}>
-                    {IMAGES.map(img => <option key={img} value={img}>{img.split('/').pop()}</option>)}
-                  </select>
+                  <div className="upload-area">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      id="img-upload"
+                      style={{ display: 'none' }}
+                      onChange={async (e) => {
+                        const file = e.target.files[0]
+                        if (!file) return
+                        const fd = new FormData()
+                        fd.append('image', file)
+                        try {
+                          const res = await fetch('http://localhost:5000/api/upload', {
+                            method: 'POST',
+                            headers: { Authorization: `Bearer ${token}` },
+                            body: fd
+                          })
+                          const data = await res.json()
+                          if (data.url) setForm({ ...form, image: `http://localhost:5000${data.url}` })
+                          else setError('Upload thất bại')
+                        } catch { setError('Upload thất bại') }
+                      }}
+                    />
+                    <label htmlFor="img-upload" className="upload-btn">
+                      📁 Chọn ảnh từ máy
+                    </label>
+                    <span className="upload-hint">JPG, PNG, WEBP · Tối đa 5MB</span>
+                  </div>
                   {form.image && <img src={form.image} alt="" className="img-preview" />}
                 </div>
                 <div className="form-group">
