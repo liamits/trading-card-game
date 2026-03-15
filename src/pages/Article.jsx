@@ -3,6 +3,66 @@ import { useParams, useNavigate } from 'react-router-dom'
 import 'react-quill/dist/quill.snow.css'
 import './Article.css'
 
+function ShareBar({ title }) {
+  const [copied, setCopied] = useState(false)
+  const url = window.location.href
+
+  const copyLink = () => {
+    navigator.clipboard.writeText(url).then(() => {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    })
+  }
+
+  const shareButtons = [
+    {
+      label: 'Facebook',
+      icon: (
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/>
+        </svg>
+      ),
+      color: '#1877f2',
+      onClick: () => window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`, '_blank', 'width=600,height=400'),
+    },
+    {
+      label: 'Twitter/X',
+      icon: (
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+        </svg>
+      ),
+      color: '#e8eaed',
+      onClick: () => window.open(`https://twitter.com/intent/tweet?url=${encodeURIComponent(url)}&text=${encodeURIComponent(title)}`, '_blank', 'width=600,height=400'),
+    },
+  ]
+
+  return (
+    <div className="share-bar">
+      <span className="share-label">Chia sẻ:</span>
+      {shareButtons.map(btn => (
+        <button key={btn.label} className="share-btn" style={{ '--share-color': btn.color }} onClick={btn.onClick} title={btn.label}>
+          {btn.icon}
+          <span>{btn.label}</span>
+        </button>
+      ))}
+      <button className={`share-btn copy-btn ${copied ? 'copied' : ''}`} onClick={copyLink} title="Copy link">
+        {copied ? (
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+            <polyline points="20 6 9 17 4 12"/>
+          </svg>
+        ) : (
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+          </svg>
+        )}
+        <span>{copied ? 'Đã copy!' : 'Copy link'}</span>
+      </button>
+    </div>
+  )
+}
+
 export default function Article() {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -123,6 +183,9 @@ export default function Article() {
                 <p>Nội dung chi tiết đang được cập nhật...</p>
               </div>
             )}
+
+            {/* Share */}
+            <ShareBar title={article.title} />
           </article>
 
           {/* Sidebar */}

@@ -301,3 +301,52 @@
   .art-header h1 { font-size: 18px; }
   .art-breadcrumb { font-size: 11px; }
 }
+
+/* ── SHARE BAR ── */
+.share-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 20px 40px;
+  border-top: 1px solid rgba(255,255,255,0.06);
+  flex-wrap: wrap;
+}
+
+.share-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #5f6368;
+  margin-right: 4px;
+}
+
+.share-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.04);
+  color: var(--share-color, #9aa0a6);
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.share-btn:hover {
+  background: rgba(255,255,255,0.08);
+  border-color: var(--share-color, #9aa0a6);
+  transform: translateY(-1px);
+}
+
+.copy-btn { --share-color: #9aa0a6; }
+.copy-btn.copied {
+  --share-color: #3fb950;
+  border-color: rgba(63,185,80,0.4);
+  background: rgba(63,185,80,0.08);
+}
+
+@media (max-width: 768px) {
+  .share-bar { padding: 16px; }
+}
