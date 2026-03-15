@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 
 export default function ProtectedRoute({ children }) {
   const navigate = useNavigate()
-  const [status, setStatus] = useState('checking') // 'checking' | 'ok' | 'redirect'
+  const [status, setStatus] = useState('checking')
 
   useEffect(() => {
     const token = localStorage.getItem('admin_token')
@@ -18,14 +18,14 @@ export default function ProtectedRoute({ children }) {
       headers: { Authorization: `Bearer ${token}` }
     })
       .then(r => {
-        if (!r.ok) throw new Error()
+        if (!r.ok) throw new Error('unauthorized')
         setStatus('ok')
       })
       .catch(() => {
-        // Server down hoặc token hết hạn
-        // Nếu token tồn tại, vẫn cho vào (offline mode)
-        // Chỉ redirect nếu không có token
-        setStatus('ok')
+        localStorage.removeItem('admin_token')
+        localStorage.removeItem('admin_user')
+        navigate('/login')
+        setStatus('redirect')
       })
   }, [])
 
