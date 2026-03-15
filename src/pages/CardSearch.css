@@ -124,17 +124,22 @@
 
 .cs-select {
   padding: 9px 14px;
-  background: rgba(255, 255, 255, 0.06);
+  background: #1a1f35;
   border: 1px solid rgba(138, 180, 248, 0.2);
   border-radius: 8px;
   color: #e8eaed;
   font-size: 13px;
   cursor: pointer;
   outline: none;
+  color-scheme: dark;
 }
 
 .cs-select:focus { border-color: #8ab4f8; }
 
+.cs-select option {
+  background: #1a1f35;
+  color: #e8eaed;
+}
 .cs-count {
   color: #9aa0a6;
   font-size: 13px;
@@ -281,3 +286,58 @@
   color: #c8cace !important;
   font-size: 13px !important;
 }
+
+/* ── CUSTOM DROPDOWN ── */
+.cs-dropdown {
+  position: relative;
+}
+
+.cs-dropdown-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 14px;
+  background: #0f1629;
+  border: 1px solid rgba(138, 180, 248, 0.2);
+  border-radius: 8px;
+  color: #e8eaed;
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color 0.15s;
+  min-width: 120px;
+}
+.cs-dropdown-btn:hover { border-color: rgba(138, 180, 248, 0.5); }
+
+.cs-dropdown-arrow {
+  font-size: 11px;
+  color: #9aa0a6;
+  transition: transform 0.15s;
+  margin-left: auto;
+}
+.cs-dropdown-arrow.open { transform: rotate(180deg); }
+
+.cs-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  min-width: 100%;
+  background: #0f1629;
+  border: 1px solid rgba(138, 180, 248, 0.2);
+  border-radius: 8px;
+  overflow: hidden;
+  z-index: 200;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+
+.cs-dropdown-item {
+  padding: 9px 14px;
+  font-size: 13px;
+  color: #9aa0a6;
+  cursor: pointer;
+  transition: all 0.1s;
+  white-space: nowrap;
+}
+.cs-dropdown-item:hover { background: rgba(138, 180, 248, 0.08); color: #e8eaed; }
+.cs-dropdown-item.active { color: #8ab4f8; background: rgba(138, 180, 248, 0.1); }

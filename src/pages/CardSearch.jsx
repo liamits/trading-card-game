@@ -1,6 +1,41 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import './CardSearch.css'
+
+// Custom dropdown để tránh flash trắng của native select
+function Dropdown({ value, onChange, options }) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef(null)
+  const selected = options.find(o => o.value === value) || options[0]
+
+  useEffect(() => {
+    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
+
+  return (
+    <div className="cs-dropdown" ref={ref}>
+      <button className="cs-dropdown-btn" onClick={() => setOpen(o => !o)}>
+        {selected.label}
+        <span className={`cs-dropdown-arrow ${open ? 'open' : ''}`}>▾</span>
+      </button>
+      {open && (
+        <div className="cs-dropdown-menu">
+          {options.map(opt => (
+            <div
+              key={opt.value}
+              className={`cs-dropdown-item ${opt.value === value ? 'active' : ''}`}
+              onClick={() => { onChange(opt.value); setOpen(false) }}
+            >
+              {opt.label}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
 
 function CardSearch() {
   const navigate = useNavigate()
@@ -105,51 +140,69 @@ function CardSearch() {
             className="cs-input"
           />
           <div className="cs-filters">
-            <select value={filters.cardType} onChange={e => handleFilterChange('cardType', e.target.value)} className="cs-select">
-              <option value="all">Tất cả</option>
-              <option value="monster">Monster</option>
-              <option value="spell">Spell</option>
-              <option value="trap">Trap</option>
-            </select>
+            <Dropdown
+              value={filters.cardType}
+              onChange={v => handleFilterChange('cardType', v)}
+              options={[
+                { value: 'all', label: 'Tất cả' },
+                { value: 'monster', label: 'Monster' },
+                { value: 'spell', label: 'Spell' },
+                { value: 'trap', label: 'Trap' },
+              ]}
+            />
             {filters.cardType === 'monster' && (
               <>
-                <select value={filters.monsterType} onChange={e => handleFilterChange('monsterType', e.target.value)} className="cs-select">
-                  <option value="all">Tất cả Monster</option>
-                  <option value="normal">Normal</option>
-                  <option value="effect">Effect</option>
-                  <option value="fusion">Fusion</option>
-                  <option value="synchro">Synchro</option>
-                  <option value="xyz">XYZ</option>
-                  <option value="link">Link</option>
-                  <option value="ritual">Ritual</option>
-                  <option value="pendulum">Pendulum</option>
-                </select>
-                <select value={filters.level} onChange={e => handleFilterChange('level', e.target.value)} className="cs-select">
-                  <option value="all">Tất cả Level</option>
-                  {[...Array(13)].map((_, i) => (
-                    <option key={i + 1} value={i + 1}>Level {i + 1}</option>
-                  ))}
-                </select>
+                <Dropdown
+                  value={filters.monsterType}
+                  onChange={v => handleFilterChange('monsterType', v)}
+                  options={[
+                    { value: 'all', label: 'Tất cả Monster' },
+                    { value: 'normal', label: 'Normal' },
+                    { value: 'effect', label: 'Effect' },
+                    { value: 'fusion', label: 'Fusion' },
+                    { value: 'synchro', label: 'Synchro' },
+                    { value: 'xyz', label: 'XYZ' },
+                    { value: 'link', label: 'Link' },
+                    { value: 'ritual', label: 'Ritual' },
+                    { value: 'pendulum', label: 'Pendulum' },
+                  ]}
+                />
+                <Dropdown
+                  value={filters.level}
+                  onChange={v => handleFilterChange('level', v)}
+                  options={[
+                    { value: 'all', label: 'Tất cả Level' },
+                    ...[...Array(13)].map((_, i) => ({ value: String(i + 1), label: `Level ${i + 1}` }))
+                  ]}
+                />
               </>
             )}
             {filters.cardType === 'spell' && (
-              <select value={filters.spellType} onChange={e => handleFilterChange('spellType', e.target.value)} className="cs-select">
-                <option value="all">Tất cả Spell</option>
-                <option value="normal">Normal</option>
-                <option value="continuous">Continuous</option>
-                <option value="quick-play">Quick-Play</option>
-                <option value="equip">Equip</option>
-                <option value="field">Field</option>
-                <option value="ritual">Ritual</option>
-              </select>
+              <Dropdown
+                value={filters.spellType}
+                onChange={v => handleFilterChange('spellType', v)}
+                options={[
+                  { value: 'all', label: 'Tất cả Spell' },
+                  { value: 'normal', label: 'Normal' },
+                  { value: 'continuous', label: 'Continuous' },
+                  { value: 'quick-play', label: 'Quick-Play' },
+                  { value: 'equip', label: 'Equip' },
+                  { value: 'field', label: 'Field' },
+                  { value: 'ritual', label: 'Ritual' },
+                ]}
+              />
             )}
             {filters.cardType === 'trap' && (
-              <select value={filters.trapType} onChange={e => handleFilterChange('trapType', e.target.value)} className="cs-select">
-                <option value="all">Tất cả Trap</option>
-                <option value="normal">Normal</option>
-                <option value="continuous">Continuous</option>
-                <option value="counter">Counter</option>
-              </select>
+              <Dropdown
+                value={filters.trapType}
+                onChange={v => handleFilterChange('trapType', v)}
+                options={[
+                  { value: 'all', label: 'Tất cả Trap' },
+                  { value: 'normal', label: 'Normal' },
+                  { value: 'continuous', label: 'Continuous' },
+                  { value: 'counter', label: 'Counter' },
+                ]}
+              />
             )}
           </div>
           <span className="cs-count">Tìm thấy: {filteredCards.length} lá</span>
