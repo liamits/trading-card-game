@@ -196,7 +196,7 @@ export default function Article() {
                 {related.length === 0 ? (
                   <p className="no-related">Chưa có bài viết liên quan</p>
                 ) : related.map(a => (
-                  <div key={a._id} className="related-item" onClick={() => navigate(`/article/${a._id}`)}>
+                  <div key={a._id} className="related-item" onClick={() => navigate(`/article/${a.slug || a._id}`)}>
                     <img src={a.image} alt={a.title} />
                     <div>
                       <span className="related-cat" style={{ color: a.color || '#8ab4f8' }}>{a.category}</span>

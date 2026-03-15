@@ -2,8 +2,9 @@ import mongoose from 'mongoose'
 
 const articleSchema = new mongoose.Schema({
   title: { type: String, required: true },
-  category: { 
-    type: String, 
+  slug: { type: String, unique: true, sparse: true },
+  category: {
+    type: String,
     required: true,
     enum: ['TIER LIST', 'TOP DECKS', 'FARMING & EVENTS', 'LEAKS & UPDATES', 'GUIDES']
   },

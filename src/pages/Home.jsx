@@ -132,7 +132,7 @@ function Home() {
                 <p>{article.desc}</p>
                 <div className="article-footer">
                   <span className="article-updated">🕐 {new Date(article.createdAt).toLocaleDateString('vi-VN')}</span>
-                  <button className="article-read-btn" onClick={() => navigate(`/article/${article._id}`)}>
+                  <button className="article-read-btn" onClick={() => navigate(`/article/${article.slug || article._id}`)}>
                     Đọc thêm →
                   </button>
                 </div>
