@@ -285,3 +285,19 @@
 @media (max-width: 900px) {
   .art-content.ql-editor { padding: 16px 20px; }
 }
+
+/* ── RESPONSIVE EXTRA ── */
+@media (max-width: 768px) {
+  .art-nav { padding: 0 16px; gap: 12px; }
+  .art-nav-links { display: none; }
+  .art-container { padding: 16px 12px 40px; }
+  .art-header { padding: 16px; }
+  .art-header h1 { font-size: 20px; }
+  .art-desc { padding: 14px 16px; font-size: 15px; }
+  .art-meta { flex-direction: column; gap: 4px; }
+}
+
+@media (max-width: 480px) {
+  .art-header h1 { font-size: 18px; }
+  .art-breadcrumb { font-size: 11px; }
+}

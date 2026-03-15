@@ -126,3 +126,13 @@
   transition: color 0.15s;
 }
 .login-back:hover { color: #8b949e; }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 480px) {
+  .login-box {
+    width: 100%;
+    margin: 0 16px;
+    padding: 32px 20px;
+    border-radius: 10px;
+  }
+}

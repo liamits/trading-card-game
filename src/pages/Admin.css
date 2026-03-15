@@ -833,3 +833,44 @@
   color: #484f58;
   white-space: nowrap;
 }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 900px) {
+  .admin-sidebar {
+    width: 60px;
+    overflow: hidden;
+  }
+  .admin-logo-sub,
+  .admin-user-name,
+  .admin-stats,
+  .admin-nav-item span:last-child { display: none; }
+  .admin-logo { padding: 16px; font-size: 14px; }
+  .admin-nav-item { padding: 12px; justify-content: center; }
+  .nav-icon { font-size: 18px; }
+  .admin-user { padding: 10px; justify-content: center; }
+  .admin-user-info { display: none; }
+  .admin-main { padding: 20px 16px; }
+}
+
+@media (max-width: 768px) {
+  .admin-table th:nth-child(1),
+  .admin-table td:nth-child(1) { display: none; } /* hide image col */
+  .admin-table th:nth-child(4),
+  .admin-table td:nth-child(4) { display: none; } /* hide author col */
+  .table-desc { max-width: 160px; }
+
+  .af-row { flex-direction: column; align-items: stretch; }
+  .af-search { min-width: unset; }
+  .af-date-group { flex-wrap: wrap; }
+
+  .form-row-2 { grid-template-columns: 1fr; }
+  .admin-modal { width: 95vw !important; }
+}
+
+@media (max-width: 480px) {
+  .admin-table th:nth-child(6),
+  .admin-table td:nth-child(6) { display: none; } /* hide date col */
+  .admin-header { flex-direction: column; gap: 10px; align-items: flex-start; }
+  .pagination { gap: 3px; }
+  .page-info { display: none; }
+}
