@@ -154,6 +154,14 @@ io.on('connection', (socket) => {
     socket.to(roomId).emit('opponent-deck-update', deck)
   })
 
+  socket.on('chain-request', ({ roomId, prompt }) => {
+    socket.to(roomId).emit('opponent-chain-request', prompt)
+  })
+
+  socket.on('chain-response', ({ roomId, response }) => {
+    socket.to(roomId).emit('opponent-chain-response', response)
+  })
+
   socket.on('disconnect', () => {
     console.log('👤 User disconnected:', socket.id)
     // Clean up rooms if host leaves
