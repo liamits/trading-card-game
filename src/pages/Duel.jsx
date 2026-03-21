@@ -2965,8 +2965,6 @@ function Duel() {
 
     const attackerCard = attacker.card
     const defenderCard = defender.card
-
-    const isPlayerAttacking = currentTurn === 'player'
     const attackerField = isPlayerAttacking ? playerField : aiField
     const defenderField = isPlayerAttacking ? aiField : playerField
     const setAttackerField = isPlayerAttacking ? setPlayerField : setAiField
