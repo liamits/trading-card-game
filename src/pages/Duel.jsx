@@ -3022,6 +3022,9 @@ function Duel() {
                   boxShadow: '0 0 10px rgba(255,50,50,0.5)'
                 }}
                 onClick={() => {
+                   if (isMultiplayer && roomId && chainPrompt.player === 'player') {
+                     socket.emit('chain-response', { roomId, response: 'no' })
+                   }
                    setChainPrompt(prev => ({ ...prev, active: false }))
                    if (chainPrompt.onCancel) chainPrompt.onCancel()
                 }}
