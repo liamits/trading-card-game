@@ -78,6 +78,16 @@ function Duel() {
     onCancel: null,
     message: ''
   })
+  
+  // Chain System States
+  const [chainStack, setChainStack] = useState([])
+  const [chainPrompt, setChainPrompt] = useState({
+    active: false,
+    player: null, // 'player' or 'ai'
+    sourceAction: '', // desc of what is being chained to
+    onResolve: null, // what happens when the prompt is answered
+    onCancel: null // if they choose not to chain
+  })
 
   useEffect(() => {
     if (!player || !ai) {
@@ -523,8 +533,28 @@ function Duel() {
       setActivatingSpell(card)
       setTimeout(() => setActivatingSpell(null), 3000)
       
-      // Apply effect based on card
-      applySpellEffect(card, isPlayerTurn)
+      const opponentField = isPlayerTurn ? aiField : playerField
+      const hasFaceDownSpells = opponentField.spells.some(s => s && !s.faceUp)
+
+      if (hasFaceDownSpells) {
+        setChainPrompt({
+          active: true,
+          player: isPlayerTurn ? 'ai' : 'player',
+          sourceAction: `${card.name} được kích hoạt!`,
+          onResolve: () => applySpellEffect(card, isPlayerTurn),
+          onCancel: () => applySpellEffect(card, isPlayerTurn),
+          context: { type: 'spell_activation', card, isPlayerTurn }
+        })
+        if (isPlayerTurn) {
+          setTimeout(() => {
+            setChainPrompt(prev => ({ ...prev, active: false }))
+            applySpellEffect(card, isPlayerTurn)
+          }, 1000)
+        }
+      } else {
+        // Apply effect based on card
+        applySpellEffect(card, isPlayerTurn)
+      }
     } else {
       // Normal/Quick-Play spells go to GY after activation
       // Remove from hand FIRST
@@ -540,8 +570,28 @@ function Duel() {
         setActivatingSpell(null)
       }, 3000)
       
-      // Apply effect based on card
-      applySpellEffect(card, isPlayerTurn)
+      const opponentField = isPlayerTurn ? aiField : playerField
+      const hasFaceDownSpells = opponentField.spells.some(s => s && !s.faceUp)
+
+      if (hasFaceDownSpells) {
+        setChainPrompt({
+          active: true,
+          player: isPlayerTurn ? 'ai' : 'player',
+          sourceAction: `${card.name} được kích hoạt!`,
+          onResolve: () => applySpellEffect(card, isPlayerTurn),
+          onCancel: () => applySpellEffect(card, isPlayerTurn),
+          context: { type: 'spell_activation', card, isPlayerTurn }
+        })
+        if (isPlayerTurn) {
+          setTimeout(() => {
+            setChainPrompt(prev => ({ ...prev, active: false }))
+            applySpellEffect(card, isPlayerTurn)
+          }, 1000)
+        }
+      } else {
+        // Apply effect based on card
+        applySpellEffect(card, isPlayerTurn)
+      }
     }
 
     // Reset states
@@ -607,6 +657,7 @@ function Duel() {
       // Equip: Monster gains 700 ATK/DEF
       handleHornOfTheUnicorn(isPlayerTurn)
     } else if (cardName.includes('mystic box')) {
+
       // Destroy 1 monster, give control of another
       handleMysticBox(isPlayerTurn)
     } else if (cardName.includes('swords of revealing light')) {
@@ -664,6 +715,125 @@ function Duel() {
       // Try to parse generic effects from description
       parseGenericEffect(card, isPlayerTurn)
     }
+  }
+
+  const activateSetCard = (card, zoneIndex, owner) => {
+    // Only allow traps and quick-play spells
+    if (!card.type.includes('Trap') && !card.desc.includes('Quick-Play')) {
+      alert('Chỉ có thể kích hoạt Bài Bẫy hoặc Phép Nhanh để phản hồi!')
+      return
+    }
+
+    if (chainPrompt.context?.type === 'attack' || chainPrompt.context?.type === 'direct_attack' || chainPrompt.context?.type === 'spell_activation') {
+      const { attacker, defender } = chainPrompt.context || {}
+      
+      setChainPrompt(prev => ({ ...prev, active: false }))
+      
+      // Flip the card up
+      const playingField = owner === 'player' ? playerField : aiField
+      const setPlayingField = owner === 'player' ? setPlayerField : setAiField
+      
+      const newSpells = [...playingField.spells]
+      newSpells[zoneIndex] = { ...card, faceUp: true }
+      setPlayingField({ ...playingField, spells: newSpells })
+
+      // Show activation
+      setActivatingSpell(card)
+      
+      setTimeout(() => {
+        setActivatingSpell(null)
+        // Send trap to GY after activation since it's a normal trap usually
+        const gy = owner === 'player' ? playerGraveyard : aiGraveyard
+        const setGy = owner === 'player' ? setPlayerGraveyard : setAiGraveyard
+        
+        const finalSpells = [...playingField.spells]
+        finalSpells[zoneIndex] = null
+        setPlayingField({ ...playingField, spells: finalSpells })
+        setGy([...gy, card])
+        
+        // Apply effect - if it's an attack, pass attacker/defender; else pass null
+        applyTrapEffect(card, attacker || null, defender || null, owner === 'player', chainPrompt.context.type, () => {
+          if (chainPrompt.onResolve) chainPrompt.onResolve()
+        })
+      }, 2000)
+    }
+  }
+
+  const applyTrapEffect = (card, attacker, defender, isPlayerTrap, attackType, proceedAttackCallback) => {
+    const cardName = card.name.toLowerCase()
+    
+    if (cardName.includes('mirror force')) {
+      if (attackType === 'attack' || attackType === 'direct_attack') {
+        executeMirrorForce(isPlayerTrap)
+        return // Attack negated/destroyed
+      } else {
+        alert('Mirror Force chỉ có thể kích hoạt khi bị tấn công!')
+        return proceedAttackCallback()
+      }
+    } else if (cardName.includes('magic cylinder')) {
+      if (attackType === 'attack' || attackType === 'direct_attack') {
+        executeMagicCylinder(attacker.card, isPlayerTrap)
+        return // Attack negated
+      } else {
+        alert('Magic Cylinder chỉ có thể kích hoạt khi bị tấn công!')
+        return proceedAttackCallback()
+      }
+    } else if (cardName.includes('negate attack')) {
+      if (attackType === 'attack' || attackType === 'direct_attack') {
+        alert('Negate Attack: Đòn tấn công bị vô hiệu hóa! Kết thúc Battle Phase.')
+        setBattlePhase(false)
+        setSelectedAttacker(null)
+        return
+      } else {
+        alert('Negate Attack chỉ có thể kích hoạt khi bị tấn công!')
+        return proceedAttackCallback()
+      }
+    } else if (cardName.includes('seven tools of the bandit')) {
+      if (attackType === 'spell_activation') {
+        alert('Seven Tools of the Bandit: Vô hiệu hóa bài Bẫy của đối thủ!')
+        // Ideally we would set a flag to cancel the previous chain link
+        // For simplicity, we just alert
+        return // Assume we cancel it out? No, proceedAttackCallback continues chain resolution.
+        // Wait, if it negated, we shouldn't continue. But we don't have full cancellation hook easily. Let's just alert.
+      }
+    }
+    
+    // Fallback if not specifically handled attack-response trap
+    alert(`Kích hoạt ${card.name}!`)
+    proceedAttackCallback()
+  }
+
+  const executeMirrorForce = (isPlayerTrap) => {
+    // If it's the player's trap, it destroys AI's attack position monsters.
+    const opponentField = isPlayerTrap ? aiField : playerField
+    const setOpponentField = isPlayerTrap ? setAiField : setPlayerField
+    const opponentGY = isPlayerTrap ? aiGraveyard : playerGraveyard
+    const setOpponentGY = isPlayerTrap ? setAiGraveyard : setPlayerGraveyard
+    
+    const attackMonsters = opponentField.monsters.filter(m => m !== null && m.position === 'attack')
+    
+    if (attackMonsters.length === 0) {
+      alert('Đối thủ không có monster ở Attack Position, Mirror Force không phá hủy được gì!')
+      return
+    }
+    
+    const newMonsters = opponentField.monsters.map(m => m && m.position === 'attack' ? null : m)
+    setOpponentField({ ...opponentField, monsters: newMonsters })
+    setOpponentGY([...opponentGY, ...attackMonsters])
+    
+    alert(`Mirror Force: Phá hủy ${attackMonsters.length} Attack Position monsters! Đòn tấn công bị hủy.`)
+    setSelectedAttacker(null)
+  }
+
+  const executeMagicCylinder = (attackerCard, isPlayerTrap) => {
+    const damage = attackerCard.atk || 0
+    if (isPlayerTrap) {
+      animateLP('ai', damage)
+    } else {
+      animateLP('player', damage)
+    }
+    alert(`Magic Cylinder: Vô hiệu hóa tấn công và phản lại ${damage} damage!`)
+    setSelectedAttacker(null)
   }
 
   const handleDrawEffect = (amount, isPlayerTurn) => {
@@ -2100,7 +2270,40 @@ function Duel() {
       alert(`${attacker.card.name} không thể tấn công do ảnh hưởng của hiệu ứng!`)
       return
     }
+
+    const isPlayerAttacking = currentTurn === 'player'
+    const defenderField = isPlayerAttacking ? aiField : playerField
+    const hasFaceDownSpells = defenderField.spells.some(s => s && !s.faceUp)
+
+    if (hasFaceDownSpells) {
+      setChainPrompt({
+        active: true,
+        player: isPlayerAttacking ? 'ai' : 'player',
+        sourceAction: `${attacker.card.name} tuyên bố tấn công!`,
+        onResolve: () => executeBattleCalculation(attacker, defender),
+        onCancel: () => executeBattleCalculation(attacker, defender),
+        context: { type: 'attack', attacker, defender }
+      })
+      // If AI, auto-cancel for now (until AI is fully implemented)
+      if (isPlayerAttacking) {
+        // give AI 1 second to "think" then cancel
+        setTimeout(() => {
+          setChainPrompt(prev => ({ ...prev, active: false }))
+          executeBattleCalculation(attacker, defender)
+        }, 1000)
+      }
+      return
+    }
+
+    executeBattleCalculation(attacker, defender)
+  }
+
+  const executeBattleCalculation = (attacker, defender) => {
+    // Re-verify attacker still exists and can attack (in case chain changed state)
+    // To properly access fresh state, we rely on the component re-render or state variables, 
+    // but React state enclosures are tricky. We'll proceed with the passed objects for now.
     const attackerCard = attacker.card
+
     const defenderCard = defender.card
 
     const isPlayerAttacking = currentTurn === 'player'
@@ -2245,6 +2448,43 @@ function Duel() {
     
     if (hasMonsters) {
       alert('Đối thủ còn quái thú trên sân!')
+      return
+    }
+
+    const hasFaceDownSpells = opponentField.spells.some(s => s && !s.faceUp)
+
+    if (hasFaceDownSpells) {
+      setChainPrompt({
+        active: true,
+        player: isPlayerAttacking ? 'ai' : 'player',
+        sourceAction: `${attackerCard.name} tấn công trực tiếp!`,
+        onResolve: () => executeDirectAttack(),
+        onCancel: () => executeDirectAttack(),
+        context: { type: 'direct_attack', attacker: selectedAttacker }
+      })
+      if (isPlayerAttacking) {
+        setTimeout(() => {
+          setChainPrompt(prev => ({ ...prev, active: false }))
+          executeDirectAttack()
+        }, 1000)
+      }
+      return
+    }
+
+    executeDirectAttack()
+  }
+
+  const executeDirectAttack = () => {
+    if (!selectedAttacker) return
+    const attackerCard = selectedAttacker.card
+    const isPlayerAttacking = currentTurn === 'player'
+    
+    // Re-check monsters
+    const opponentField = isPlayerAttacking ? aiField : playerField
+    const hasMonsters = opponentField.monsters.some(m => m !== null)
+    if (hasMonsters) {
+      alert('Tấn công trực tiếp bị hủy vì đối thủ có quái thú mởi trên sân!')
+      setSelectedAttacker(null)
       return
     }
 
@@ -2433,7 +2673,44 @@ function Duel() {
         </div>
       )}
 
+      {/* Chain Prompt Overlay */}
+      {chainPrompt.active && (
+        <div className="target-selection-overlay" style={{ zIndex: 60 }}>
+          <div className="target-selection-content">
+            <div className="target-selection-pulse"></div>
+            <h3>⚡ Chuỗi Kích Hoạt (Chain)</h3>
+            <p className="chain-source">{chainPrompt.sourceAction}</p>
+            <p>Bạn có muốn kích hoạt Bài Bẫy / Bài Phép Nhanh để phản hồi không?</p>
+            <div style={{ marginTop: '20px', display: 'flex', gap: '10px', justifyContent: 'center' }}>
+              <button 
+                className="btn-resolve"
+                style={{
+                  background: 'linear-gradient(45deg, #1a2a6c, #b21f1f)',
+                  padding: '10px 20px',
+                  border: 'none',
+                  borderRadius: '5px',
+                  color: 'white',
+                  cursor: 'pointer',
+                  fontWeight: 'bold',
+                  boxShadow: '0 0 10px rgba(255,50,50,0.5)'
+                }}
+                onClick={() => {
+                   setChainPrompt(prev => ({ ...prev, active: false }))
+                   if (chainPrompt.onCancel) chainPrompt.onCancel()
+                }}
+              >
+                Không, tiếp tục
+              </button>
+            </div>
+            <p style={{ marginTop: '15px', color: '#ffeb3b', fontSize: '0.9rem' }}>
+              (Click vào một bài đang úp trên sân bạn để kích hoạt)
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Graveyard Selection Modal */}
+
       {graveyardSelection.active && (
         <div className="discard-modal" onClick={handleCancelGraveyardSelection}>
           <div className="discard-content" onClick={(e) => e.stopPropagation()}>
@@ -2557,7 +2834,12 @@ function Duel() {
             {(currentTurn === 'player' ? aiField : playerField).spells.map((card, i) => (
               <div 
                 key={i} 
-                className="zone spell-trap-zone"
+                className={`zone spell-trap-zone ${chainPrompt.active && chainPrompt.player === (currentTurn === 'player' ? 'ai' : 'player') && card && !card.faceUp ? 'chain-target' : ''}`}
+                onClick={() => {
+                  if (chainPrompt.active && chainPrompt.player === (currentTurn === 'player' ? 'ai' : 'player') && card && !card.faceUp) {
+                    activateSetCard(card, i, currentTurn === 'player' ? 'ai' : 'player')
+                  }
+                }}
               >
                 {card ? (
                   card.faceUp ? (
@@ -2658,9 +2940,11 @@ function Duel() {
             {(currentTurn === 'player' ? playerField : aiField).spells.map((card, i) => (
               <div 
                 key={i} 
-                className={`zone spell-trap-zone ${selectingZone && (selectedHandCard?.card.type.includes('Spell') || selectedHandCard?.card.type.includes('Trap')) ? 'zone-selectable' : ''} ${card && !card.faceUp ? 'has-set-card' : ''}`}
+                className={`zone spell-trap-zone ${selectingZone && (selectedHandCard?.card.type.includes('Spell') || selectedHandCard?.card.type.includes('Trap')) ? 'zone-selectable' : ''} ${card && !card.faceUp ? 'has-set-card' : ''} ${chainPrompt.active && chainPrompt.player === currentTurn && card && !card.faceUp ? 'chain-target' : ''}`}
                 onClick={() => {
-                  if (selectingZone && !card && (selectedHandCard?.card.type.includes('Spell') || selectedHandCard?.card.type.includes('Trap'))) {
+                  if (chainPrompt.active && chainPrompt.player === currentTurn && card && !card.faceUp) {
+                    activateSetCard(card, i, currentTurn)
+                  } else if (selectingZone && !card && (selectedHandCard?.card.type.includes('Spell') || selectedHandCard?.card.type.includes('Trap'))) {
                     handleZoneSelect(i, 'spell')
                   }
                 }}
