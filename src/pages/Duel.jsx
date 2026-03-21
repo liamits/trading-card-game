@@ -1370,20 +1370,71 @@ function Duel() {
     return false
   }
 
-  const handleActivateKuriboh = (handIndex) => {
-    const card = playerHand[handIndex]
+  const handleActivateKuriboh = (handIndex, owner = 'player') => {
+    const hand = owner === 'player' ? playerHand : aiHand
+    const setHand = owner === 'player' ? setPlayerHand : setAiHand
+    const gy = owner === 'player' ? playerGraveyard : aiGraveyard
+    const setGy = owner === 'player' ? setPlayerGraveyard : setAiGraveyard
+    
+    const card = hand[handIndex]
     if (!card) return
 
     // Discard
-    setPlayerHand(prev => prev.filter((_, i) => i !== handIndex))
-    setPlayerGraveyard(prev => [...prev, card])
+    setHand(prev => prev.filter((_, i) => i !== handIndex))
+    setGy(prev => [...prev, card])
 
     // Resolve effects
     const { onProceed } = chainPrompt.context
     setChainPrompt({ ...chainPrompt, active: false })
     
-    alert(`Kuriboh: Hiệu ứng kích hoạt! Bạn không nhận sát thương từ trận đấu này.`)
+    if (owner === 'player') {
+      alert(`Kuriboh: Hiệu ứng kích hoạt! Bạn không nhận sát thương từ trận đấu này.`)
+    } else {
+      alert(`Kuriboh: Đối thủ kích hoạt Kuriboh! AI không nhận sát thương từ trận đấu này.`)
+    }
     onProceed(0)
+  }
+
+  const handleAiChainResponse = (prompt) => {
+    console.log("AI is evaluating chain response...")
+    
+    // 1. Check for Attack Responses (Mirror Force, Magic Cylinder, Kuriboh)
+    if (prompt.context?.type === 'attack' || prompt.context?.type === 'direct_attack') {
+      const setSpells = aiField.spells
+        .map((s, i) => s ? { card: s, index: i } : null)
+        .filter(s => s !== null && !s.card.faceUp)
+      
+      // Mirror Force (only for monster vs monster attacks usually, but can be direct too)
+      const mirrorForce = setSpells.find(s => s.card.name === 'Mirror Force')
+      if (mirrorForce) {
+        console.log("AI chaining Mirror Force")
+        setTimeout(() => activateSetCard(mirrorForce.card, mirrorForce.index, 'ai'), 1000)
+        return
+      }
+
+      // Magic Cylinder
+      const magicCylinder = setSpells.find(s => s.card.name === 'Magic Cylinder')
+      if (magicCylinder) {
+        console.log("AI chaining Magic Cylinder")
+        setTimeout(() => activateSetCard(magicCylinder.card, magicCylinder.index, 'ai'), 1000)
+        return
+      }
+
+      // Kuriboh from hand
+      const kuribohIndex = aiHand.findIndex(c => c.name === 'Kuriboh')
+      if (kuribohIndex !== -1) {
+        console.log("AI chaining Kuriboh")
+        setTimeout(() => handleActivateKuriboh(kuribohIndex, 'ai'), 1000)
+        return
+      }
+    }
+
+    // 2. Check for Spell Activation Responses (Seven Tools of the Bandit for Traps, but here we cover spells)
+    // For now, AI just says No to things it doesn't have a specific response for
+    
+    setTimeout(() => {
+      handleChainResponse('no')
+    }, 1200)
   }
 
 
