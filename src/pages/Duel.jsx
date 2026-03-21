@@ -3519,7 +3519,7 @@ function Duel() {
 
       {/* Opponent Hand (face down) - Top */}
       <div className="hand ai-hand">
-        {aiHand.map((card, i) => (
+        {(isMultiplayer ? aiHand : aiHand).map((card, i) => (
           <div key={i} className="hand-card">
             <div className="card-back-small"></div>
           </div>
@@ -3537,8 +3537,8 @@ function Duel() {
           <div className="zone deck-zone">
             <div className="card-back"></div>
             <div className="zone-label">Deck</div>
-            {(currentTurn === 'player' ? aiDeck : playerDeck).length > 0 && (
-              <div className="deck-count">{(currentTurn === 'player' ? aiDeck : playerDeck).length}</div>
+            {aiDeck.length > 0 && (
+              <div className="deck-count">{aiDeck.length}</div>
             )}
           </div>
           <div className="zone graveyard-zone" onClick={() => handleGraveyardClick('ai')}>
@@ -3551,18 +3551,18 @@ function Duel() {
 
         {/* Center Field */}
         <div className="center-field">
-          {/* Opponent Spell/Trap Zones */}
+          {/* AI Spell/Trap Zones */}
           <div className="spell-trap-zones ai-spells">
-            {(currentTurn === 'player' ? aiField : playerField).spells.map((card, i) => (
+            {aiField.spells.map((card, i) => (
               <div 
                 key={i} 
-                className={`zone spell-trap-zone ${chainPrompt.active && chainPrompt.player === (currentTurn === 'player' ? 'ai' : 'player') && card && !card.faceUp ? 'chain-target' : ''}`}
+                className={`zone spell-trap-zone ${chainPrompt.active && chainPrompt.player === 'ai' && card && !card.faceUp ? 'chain-target' : ''}`}
                 onClick={() => {
-                  if (chainPrompt.active && chainPrompt.player === (currentTurn === 'player' ? 'ai' : 'player') && card && !card.faceUp) {
+                  if (chainPrompt.active && chainPrompt.player === 'ai' && card && !card.faceUp) {
                     if (isMultiplayer && roomId) {
                       socket.emit('chain-response', { roomId, response: 'yes' })
                     }
-                    activateSetCard(card, i, currentTurn === 'player' ? 'ai' : 'player')
+                    activateSetCard(card, i, 'ai')
                   }
                 }}
               >
@@ -3585,9 +3585,9 @@ function Duel() {
             ))}
           </div>
 
-          {/* Opponent Monster Zones */}
+          {/* AI Monster Zones */}
           <div className="monster-zones ai-monsters">
-            {(currentTurn === 'player' ? aiField : playerField).monsters.map((card, i) => (
+            {aiField.monsters.map((card, i) => (
               <div 
                 key={i} 
                 className={`zone monster-zone ${battlePhase && card ? 'battle-target' : ''}`}
@@ -3618,9 +3618,9 @@ function Duel() {
             ))}
           </div>
 
-          {/* Current Player Monster Zones */}
+          {/* Player Monster Zones */}
           <div className="monster-zones player-monsters">
-            {(currentTurn === 'player' ? playerField : aiField).monsters.map((card, i) => (
+            {playerField.monsters.map((card, i) => (
               <div 
                 key={i} 
                 className={`zone monster-zone ${selectedAttacker?.index === i ? 'selected-attacker' : ''} ${selectingZone && selectedHandCard?.card.type.includes('Monster') ? 'zone-selectable' : ''} ${fusionMode && card ? 'fusion-material-selectable' : ''} ${fusionMode && selectedFusionMaterials.some(m => m.id === `field-${i}`) ? 'selected-fusion-material' : ''}`}
@@ -3660,18 +3660,18 @@ function Duel() {
             ))}
           </div>
 
-          {/* Current Player Spell/Trap Zones */}
+          {/* Player Spell/Trap Zones */}
           <div className="spell-trap-zones player-spells">
-            {(currentTurn === 'player' ? playerField : aiField).spells.map((card, i) => (
+            {playerField.spells.map((card, i) => (
               <div 
                 key={i} 
-                className={`zone spell-trap-zone ${selectingZone && (selectedHandCard?.card.type.includes('Spell') || selectedHandCard?.card.type.includes('Trap')) ? 'zone-selectable' : ''} ${card && !card.faceUp ? 'has-set-card' : ''} ${chainPrompt.active && chainPrompt.player === currentTurn && card && !card.faceUp ? 'chain-target' : ''}`}
+                className={`zone spell-trap-zone ${selectingZone && (selectedHandCard?.card.type.includes('Spell') || selectedHandCard?.card.type.includes('Trap')) ? 'zone-selectable' : ''} ${card && !card.faceUp ? 'has-set-card' : ''} ${chainPrompt.active && chainPrompt.player === 'player' && card && !card.faceUp ? 'chain-target' : ''}`}
                 onClick={() => {
-                  if (chainPrompt.active && chainPrompt.player === currentTurn && card && !card.faceUp) {
+                  if (chainPrompt.active && chainPrompt.player === 'player' && card && !card.faceUp) {
                     if (isMultiplayer && roomId) {
                       socket.emit('chain-response', { roomId, response: 'yes' })
                     }
-                    activateSetCard(card, i, currentTurn)
+                    activateSetCard(card, i, 'player')
                   } else if (selectingZone && !card && (selectedHandCard?.card.type.includes('Spell') || selectedHandCard?.card.type.includes('Trap'))) {
                     handleZoneSelect(i, 'spell')
                   }
@@ -3707,8 +3707,8 @@ function Duel() {
           <div className="zone deck-zone">
             <div className="card-back"></div>
             <div className="zone-label">Deck</div>
-            {(currentTurn === 'player' ? playerDeck : aiDeck).length > 0 && (
-              <div className="deck-count">{(currentTurn === 'player' ? playerDeck : aiDeck).length}</div>
+            {playerDeck.length > 0 && (
+              <div className="deck-count">{playerDeck.length}</div>
             )}
           </div>
           <div className="zone graveyard-zone" onClick={() => handleGraveyardClick('player')}>
