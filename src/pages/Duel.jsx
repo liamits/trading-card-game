@@ -123,12 +123,17 @@ function Duel() {
         setCurrentTurn(turn)
       })
 
-      socket.on('opponent-field-update', (field) => {
-        setAiField(field)
-      })
-
       socket.on('opponent-gy-update', (gy) => {
         setAiGraveyard(gy)
+      })
+
+      socket.on('opponent-hand-update', (handLength) => {
+        // Create dummy cards for opponent hand visibility
+        setAiHand(new Array(handLength).fill({ id: 'dummy', isUnknown: true }))
+      })
+
+      socket.on('opponent-deck-update', (deckLength) => {
+        setAiDeck(new Array(deckLength).fill({ id: 'dummy', isUnknown: true }))
       })
     }
 
@@ -137,6 +142,8 @@ function Duel() {
       socket.off('opponent-phase-update')
       socket.off('opponent-field-update')
       socket.off('opponent-gy-update')
+      socket.off('opponent-hand-update')
+      socket.off('opponent-deck-update')
     }
   }, [isMultiplayer, roomId])
 
@@ -163,6 +170,18 @@ function Duel() {
       socket.emit('update-gy', { roomId, gy: playerGraveyard })
     }
   }, [playerGraveyard, isMultiplayer, roomId])
+
+  useEffect(() => {
+    if (isMultiplayer && roomId) {
+      socket.emit('update-hand', { roomId, hand: playerHand.length })
+    }
+  }, [playerHand.length, isMultiplayer, roomId])
+
+  useEffect(() => {
+    if (isMultiplayer && roomId) {
+      socket.emit('update-deck', { roomId, deck: playerDeck.length })
+    }
+  }, [playerDeck.length, isMultiplayer, roomId])
 
   useEffect(() => {
     // Check win/lose condition

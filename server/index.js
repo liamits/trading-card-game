@@ -132,6 +132,14 @@ io.on('connection', (socket) => {
     socket.to(roomId).emit('opponent-gy-update', gy)
   })
 
+  socket.on('update-hand', ({ roomId, hand }) => {
+    socket.to(roomId).emit('opponent-hand-update', hand)
+  })
+
+  socket.on('update-deck', ({ roomId, deck }) => {
+    socket.to(roomId).emit('opponent-deck-update', deck)
+  })
+
   socket.on('disconnect', () => {
     console.log('👤 User disconnected:', socket.id)
     // Clean up rooms if host leaves
