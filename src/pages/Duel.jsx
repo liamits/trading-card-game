@@ -71,6 +71,13 @@ function Duel() {
     onCancel: null,
     message: ''
   })
+  const [graveyardSelection, setGraveyardSelection] = useState({
+    active: false,
+    list: [],
+    onSelect: null,
+    onCancel: null,
+    message: ''
+  })
 
   useEffect(() => {
     if (!player || !ai) {
@@ -687,18 +694,20 @@ function Duel() {
   }
 
   const handleMonsterReborn = (isPlayerTurn) => {
-    const playerGY = playerGraveyard.filter(c => c.type.includes('Monster'))
-    const aiGY = aiGraveyard.filter(c => c.type.includes('Monster'))
-    const allMonsters = [...playerGY, ...aiGY]
-    
+    const allMonsters = [...playerGraveyard, ...aiGraveyard].filter(m => m.type.includes('Monster'))
     if (allMonsters.length === 0) {
-      alert('Không có monster nào trong Graveyard!')
+      alert('Không có quái thú trong nghĩa địa!')
       return
     }
-    
-    // Enter monster selection mode
-    setMonsterRebornMode(true)
-    setAvailableRebornMonsters(allMonsters)
+    setGraveyardSelection({
+      active: true,
+      list: allMonsters,
+      message: 'Monster Reborn: Chọn 1 quái thú để hồi sinh',
+      onSelect: (monster) => {
+        handleSelectRebornMonster(monster)
+      },
+      onCancel: handleCancelGraveyardSelection
+    })
   }
 
   const handleSelectRebornMonster = (monster) => {
@@ -739,8 +748,7 @@ function Duel() {
     alert(`Monster Reborn: Hồi sinh ${monster.name}!`)
     
     // Close modal
-    setMonsterRebornMode(false)
-    setAvailableRebornMonsters([])
+    setGraveyardSelection({ ...graveyardSelection, active: false })
   }
 
   const handleDeSpell = (isPlayerTurn) => {
@@ -1590,6 +1598,13 @@ function Duel() {
     setShowCardOptions(false)
   }
 
+  const handleCancelGraveyardSelection = () => {
+    if (graveyardSelection.onCancel) {
+      graveyardSelection.onCancel()
+    }
+    setGraveyardSelection({ ...graveyardSelection, active: false })
+  }
+
   const handleCancelTargetSelection = () => {
     if (targetSelection.onCancel) {
       targetSelection.onCancel()
@@ -2199,6 +2214,38 @@ function Duel() {
                 )}
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Graveyard Selection Modal */}
+      {graveyardSelection.active && (
+        <div className="discard-modal" onClick={handleCancelGraveyardSelection}>
+          <div className="discard-content" onClick={(e) => e.stopPropagation()}>
+            <div className="discard-header">
+              <h2>Nghĩa Địa</h2>
+              <p className="discard-instruction">{graveyardSelection.message}</p>
+            </div>
+            <div className="discard-cards-grid">
+              {graveyardSelection.list.map((card, i) => (
+                <div 
+                  key={i} 
+                  className="discard-card"
+                  onClick={() => graveyardSelection.onSelect(card)}
+                >
+                  <img src={card.image_url} alt={card.name} />
+                  <div className="discard-card-name">{card.name}</div>
+                </div>
+              ))}
+            </div>
+            <div className="discard-buttons">
+              <button 
+                className="discard-btn"
+                onClick={handleCancelGraveyardSelection}
+              >
+                Hủy bỏ
+              </button>
+            </div>
           </div>
         </div>
       )}
