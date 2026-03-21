@@ -2947,7 +2947,9 @@ function Duel() {
     executeBattleCalculation(attacker, defender)
   }
 
+  const executeBattleCalculation = (attacker, defender) => {
     // Re-verify attacker still exists on field
+    const isPlayerAttacking = currentTurn === 'player'
     const freshAttackerField = isPlayerAttacking ? playerField : aiField
     if (!freshAttackerField.monsters[attacker.index] || freshAttackerField.monsters[attacker.index].id !== attacker.card.id) {
       console.log("Attack cancelled: Attacker no longer on field or changed")
