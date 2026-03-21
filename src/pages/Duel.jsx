@@ -764,6 +764,8 @@ function Duel() {
   }
 
   const handleHandCardClick = (card, index) => {
+    if (currentTurn !== 'player') return
+
     // Close context menu
     setContextMenu(null)
 
@@ -2670,6 +2672,11 @@ function Duel() {
   }
 
   const handleCardClick = (card, type, index, isCurrentPlayer) => {
+    // In single player, isCurrentPlayer refers to the bottom (human) side.
+    // We only allow interactions if it's the player's turn, OR if selecting a target (which could be on either side).
+    if (!isMultiplayer && !targetSelection.active && currentTurn !== 'player' && isCurrentPlayer) return
+    if (!isMultiplayer && !targetSelection.active && currentTurn !== 'player' && !isCurrentPlayer && !battlePhase) return
+
     // If target selection is active
     if (targetSelection.active) {
       const { type: targetType, source: targetSource, onSelect } = targetSelection
