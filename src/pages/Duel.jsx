@@ -330,7 +330,7 @@ function Duel() {
 
       const strongestPlayerMonster = playerFieldRef.current.monsters
         .filter(m => m !== null && m.faceUp)
-        .sort((a, b) => (b.card.position === 'attack' ? b.card.atk : b.card.def) - (a.card.position === 'attack' ? a.card.atk : a.card.def))[0]
+        .sort((a, b) => (b.position === 'attack' ? b.atk : b.def) - (a.position === 'attack' ? a.atk : a.def))[0]
 
       for (const m of monstersInHand) {
         // ... (level and tribute logic)
@@ -345,7 +345,7 @@ function Duel() {
           let position = 'attack'
           let faceUp = true
           
-          if (strongestPlayerMonster && card.atk < (strongestPlayerMonster.card.position === 'attack' ? strongestPlayerMonster.card.atk : strongestPlayerMonster.card.def)) {
+          if (strongestPlayerMonster && card.atk < (strongestPlayerMonster.position === 'attack' ? strongestPlayerMonster.atk : strongestPlayerMonster.def)) {
             if (card.def > card.atk) {
               position = 'defense'
               faceUp = false
@@ -522,8 +522,8 @@ function Duel() {
 
       if (rebornIndex !== -1 && aiEmptyZone !== -1) {
         const allGYMonsters = [
-          ...aiGraveyard.map(c => ({ card: c, owner: 'ai' })),
-          ...playerGraveyard.map(c => ({ card: c, owner: 'player' }))
+          ...aiGraveyardRef.current.map(c => ({ card: c, owner: 'ai' })),
+          ...playerGraveyardRef.current.map(c => ({ card: c, owner: 'player' }))
         ].filter(item => item.card.type.includes('Monster'))
 
         if (allGYMonsters.length > 0) {
