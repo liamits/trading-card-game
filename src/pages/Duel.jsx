@@ -4249,65 +4249,34 @@ function Duel() {
       {/* Fusion Summon Modal */}
       {fusionMode && (
         <div className="fusion-modal">
-          <div className="fusion-content">
-            <div className="fusion-header">
-              <h2>🌟 FUSION SUMMON 🌟</h2>
-              <p>Chọn materials và Fusion Monster để triệu hồi</p>
+          {/* ... fusion content ... */}
+        </div>
+      )}
+
+      {/* Chain Prompt Overlay */}
+      {chainPrompt.active && (
+        <div className="chain-overlay">
+          <div className="chain-content">
+            <div className="chain-header">
+              <h3>DÂY CHUYỀN (CHAIN)</h3>
+              <p>{chainPrompt.sourceAction}</p>
             </div>
-
-            <div className="fusion-sections">
-              {/* Available Fusion Monsters */}
-              <div className="fusion-monsters-section">
-                <h3>Fusion Monsters có thể triệu hồi:</h3>
-                <div className="fusion-monsters-grid">
-                  {availableFusions.map((fusion, i) => (
-                    <div 
-                      key={i}
-                      className={`fusion-monster-card ${selectedFusionMonster?.monster.id === fusion.monster.id ? 'selected' : ''}`}
-                      onClick={() => handleSelectFusionMonster(fusion)}
-                    >
-                      <img src={fusion.monster.image_url} alt={fusion.monster.name} />
-                      <div className="fusion-monster-name">{fusion.monster.name}</div>
-                      <div className="fusion-monster-stats">ATK: {fusion.monster.atk} / DEF: {fusion.monster.def}</div>
-                      {selectedFusionMonster?.monster.id === fusion.monster.id && <div className="fusion-selected-badge">✓</div>}
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Selected Materials */}
-              <div className="fusion-materials-section">
-                <h3>Materials đã chọn: ({selectedFusionMaterials.length})</h3>
-                <div className="selected-materials-display">
-                  {selectedFusionMaterials.map((material, i) => (
-                    <div key={i} className="selected-material">
-                      <img src={material.card.image_url} alt={material.card.name} />
-                      <div className="material-name">{material.card.name}</div>
-                      <div className="material-source">({material.source === 'hand' ? 'Hand' : 'Field'})</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
+            <div className="chain-body">
+              <p>Bạn có muốn kích hoạt lá bài úp để phản hồi không?</p>
+              <div className="chain-hint">💡 Các lá bài nhấp nháy trên sân có thể kích hoạt</div>
             </div>
-
-            <div className="fusion-instructions">
-              <p>💡 Click vào monsters trên hand/field để chọn materials</p>
-              <p>💡 Click vào Fusion Monster để chọn</p>
-            </div>
-
-            <div className="fusion-buttons">
+            <div className="chain-buttons">
               <button 
-                className="fusion-btn confirm"
-                onClick={handleConfirmFusion}
-                disabled={!selectedFusionMonster || selectedFusionMaterials.length < 2}
+                className="chain-btn no" 
+                onClick={() => {
+                  if (isMultiplayer && roomId) {
+                    socket.emit('chain-response', { roomId, response: 'no' })
+                  }
+                  setChainPrompt({ active: false, player: null, sourceAction: '', onResolve: null, onCancel: null, context: null })
+                  chainPrompt.onCancel?.()
+                }}
               >
-                🌟 Fusion Summon
-              </button>
-              <button 
-                className="fusion-btn cancel"
-                onClick={handleCancelFusion}
-              >
-                ❌ Hủy
+                KHÔNG KÍCH HOẠT (CANCEL)
               </button>
             </div>
           </div>
