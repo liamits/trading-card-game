@@ -2902,8 +2902,7 @@ function Duel() {
   const handleDirectAttack = (aiAttacker = null) => {
     const attacker = aiAttacker || selectedAttacker
     if (!attacker) return
-
-    const attackerCard = selectedAttacker.card
+    const attackerCard = attacker.card
     const isPlayerAttacking = currentTurn === 'player'
     
     // Check if opponent has no monsters
@@ -2941,7 +2940,7 @@ function Duel() {
   const executeDirectAttack = (aiAttacker = null) => {
     const attacker = aiAttacker || selectedAttacker
     if (!attacker) return
-    const attackerCard = selectedAttacker.card
+    const attackerCard = attacker.card
     const isPlayerAttacking = currentTurn === 'player'
     
     // Re-check monsters
