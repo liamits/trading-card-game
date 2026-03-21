@@ -131,6 +131,18 @@ function Duel() {
   }, [isMultiplayer, roomId])
 
   useEffect(() => {
+    if (isMultiplayer && roomId) {
+      socket.emit('update-lp', { roomId, lp: playerLP })
+    }
+  }, [playerLP, isMultiplayer, roomId])
+
+  useEffect(() => {
+    if (isMultiplayer && roomId) {
+      socket.emit('update-phase', { roomId, phase: battlePhase, turn: currentTurn })
+    }
+  }, [battlePhase, currentTurn, isMultiplayer, roomId])
+
+  useEffect(() => {
     // Check win/lose condition
     if (playerLP <= 0) {
       setGameOver(true)

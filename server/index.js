@@ -116,6 +116,14 @@ io.on('connection', (socket) => {
     }
   })
 
+  socket.on('update-lp', ({ roomId, lp }) => {
+    socket.to(roomId).emit('opponent-lp-update', lp)
+  })
+
+  socket.on('update-phase', ({ roomId, phase, turn }) => {
+    socket.to(roomId).emit('opponent-phase-update', { phase, turn })
+  })
+
   socket.on('disconnect', () => {
     console.log('👤 User disconnected:', socket.id)
     // Clean up rooms if host leaves
