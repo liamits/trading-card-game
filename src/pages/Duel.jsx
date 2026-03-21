@@ -154,13 +154,11 @@ function Duel() {
     
     // Check hand limit before ending turn
     if (currentHand.length > handLimit) {
-      // Need to discard cards
       setDiscardingCards(true)
       setSelectedDiscards([])
       return
     }
     
-    // Proceed with end turn
     proceedEndTurn()
   }
 
@@ -180,6 +178,46 @@ function Duel() {
     
     setCurrentField({ ...currentField, spells: updatedSpells })
     
+    // Return controlled monsters
+    const returnMonsters = (sourceField, setSourceField, targetField, setTargetField, sourceName) => {
+      let currentSourceMonsters = [...sourceField.monsters]
+      let currentTargetMonsters = [...targetField.monsters]
+      let changed = false
+      
+      currentSourceMonsters = currentSourceMonsters.map((m, i) => {
+        if (m && m.returnAtEndTurn) {
+          const emptyZone = currentTargetMonsters.findIndex(mz => mz === null)
+          if (emptyZone !== -1) {
+            currentTargetMonsters[emptyZone] = { ...m, returnAtEndTurn: false, originalOwner: null }
+            changed = true
+            return null
+          } else {
+            // Field full, send to GY
+            const cardToGY = { ...m, returnAtEndTurn: false, originalOwner: null }
+            if (sourceName === 'player') {
+              setPlayerGraveyard(prev => [...prev, cardToGY])
+            } else {
+              setAiGraveyard(prev => [...prev, cardToGY])
+            }
+            changed = true
+            return null
+          }
+        }
+        return m
+      })
+      
+      if (changed) {
+        setSourceField({ ...sourceField, monsters: currentSourceMonsters })
+        setTargetField({ ...targetField, monsters: currentTargetMonsters })
+      }
+    }
+
+    if (currentTurn === 'player') {
+      returnMonsters(playerField, setPlayerField, aiField, setAiField, 'player')
+    } else {
+      returnMonsters(aiField, setAiField, playerField, setPlayerField, 'ai')
+    }
+
     setCurrentTurn(nextTurn)
     
     // Reset normal summon for next turn
@@ -464,7 +502,8 @@ function Duel() {
                              cardName.includes('book of secret arts') ||
                              cardName.includes('horn of the unicorn') ||
                              cardName.includes('shadow spell') ||
-                             cardName.includes('spellbinding circle')
+                             cardName.includes('spellbinding circle') ||
+                             cardName.includes('premature burial')
 
     if (shouldStayOnField) {
       // Continuous/Field/Equip spells stay on field
@@ -561,6 +600,9 @@ function Duel() {
     } else if (cardName.includes('brain control')) {
       // Take control of opponent monster for 1 turn
       handleBrainControl(isPlayerTurn)
+    } else if (cardName.includes('premature burial')) {
+      // Pay 800 LP, Special Summon from GY and equip
+      handlePrematureBurial(isPlayerTurn, zoneIndex)
     } else if (cardName.includes('horn of the unicorn')) {
       // Equip: Monster gains 700 ATK/DEF
       handleHornOfTheUnicorn(isPlayerTurn)
@@ -1037,7 +1079,35 @@ function Duel() {
   }
 
   const handleBrainControl = (isPlayerTurn) => {
-    alert('Brain Control: Chọn 1 monster của đối thủ để điều khiển trong turn này! (Cần implement control system)')
+    // Check LP
+    const currentLP = isPlayerTurn ? playerLP : aiLP
+    const setLP = isPlayerTurn ? setPlayerLP : setAiLP
+    if (currentLP <= 800) {
+      alert('Không đủ LP để kích hoạt Brain Control!')
+      return
+    }
+
+    setTargetSelection({
+      active: true,
+      type: 'monster',
+      source: isPlayerTurn ? 'ai' : 'player',
+      message: 'Brain Control: Chọn 1 quái thú của đối thủ để điều khiển trong turn này (Trả 800 LP)',
+      onSelect: (targetCard, targetType, targetIndex, targetOwner) => {
+        // Pay LP
+        setLP(currentLP - 800)
+        
+        const success = handleTakeControl(
+          targetCard, 
+          targetOwner, 
+          isPlayerTurn ? 'player' : 'ai', 
+          targetIndex, 
+          true // return at end turn
+        )
+        if (success) {
+          alert(`Brain Control: Đã trả 800 LP và chiếm quyền điều khiển ${targetCard.name}!`)
+        }
+      }
+    })
   }
 
   const handleHornOfTheUnicorn = (isPlayerTurn) => {
@@ -1298,8 +1368,122 @@ function Duel() {
   }
 
   const handleChangeOfHeart = (isPlayerTurn) => {
-    alert('Change of Heart: Chọn 1 monster của đối thủ để điều khiển trong turn này! (Cần implement control system)')
+    setTargetSelection({
+      active: true,
+      type: 'monster',
+      source: isPlayerTurn ? 'ai' : 'player',
+      message: 'Change of Heart: Chọn 1 quái thú của đối thủ để điều khiển trong turn này',
+      onSelect: (targetCard, targetType, targetIndex, targetOwner) => {
+        const success = handleTakeControl(
+          targetCard, 
+          targetOwner, 
+          isPlayerTurn ? 'player' : 'ai', 
+          targetIndex, 
+          true // return at end turn
+        )
+        if (success) {
+          alert(`Change of Heart: Đã chiếm quyền điều khiển ${targetCard.name}!`)
+        }
+      }
+    })
   }
+
+  const handlePrematureBurial = (isPlayerTurn, spellZoneIndex) => {
+    const currentLP = isPlayerTurn ? playerLP : aiLP
+    const setLP = isPlayerTurn ? setPlayerLP : setAiLP
+    
+    if (currentLP <= 800) {
+      alert('Không đủ LP để kích hoạt Premature Burial!')
+      // Destroy the spell card since activation failed
+      const field = isPlayerTurn ? playerField : aiField
+      const setField = isPlayerTurn ? setPlayerField : setAiField
+      const gy = isPlayerTurn ? playerGraveyard : aiGraveyard
+      const setGy = isPlayerTurn ? setPlayerGraveyard : setAiGraveyard
+      
+      const spellCard = field.spells[spellZoneIndex]
+      if (spellCard) {
+        setGy([...gy, spellCard])
+        const newSpells = [...field.spells]
+        newSpells[spellZoneIndex] = null
+        setField({ ...field, spells: newSpells })
+      }
+      return
+    }
+
+    const gy = isPlayerTurn ? playerGraveyard : aiGraveyard
+    const monstersInGy = gy.filter(c => c.type.includes('Monster'))
+    
+    if (monstersInGy.length === 0) {
+      alert('Không có quái thú trong nghĩa địa để hồi sinh!')
+      // Destroy spell
+      const field = isPlayerTurn ? playerField : aiField
+      const setField = isPlayerTurn ? setPlayerField : setAiField
+      const setGy = isPlayerTurn ? setPlayerGraveyard : setAiGraveyard
+      const spellCard = field.spells[spellZoneIndex]
+      if (spellCard) {
+        setGy([...gy, spellCard])
+        const newSpells = [...field.spells]
+        newSpells[spellZoneIndex] = null
+        setField({ ...field, spells: newSpells })
+      }
+      return
+    }
+
+    setGraveyardSelection({
+      active: true,
+      list: monstersInGy,
+      message: 'Premature Burial: Chọn 1 quái thú từ Nghĩa địa để hồi sinh (Trả 800 LP)',
+      onSelect: (monster) => {
+        // Pay LP
+        setLP(currentLP - 800)
+        
+        const field = isPlayerTurn ? playerField : aiField
+        const setField = isPlayerTurn ? setPlayerField : setAiField
+        const setGy = isPlayerTurn ? setPlayerGraveyard : setAiGraveyard
+        
+        // Find empty monster zone
+        const emptyZoneIndex = field.monsters.findIndex(m => m === null)
+        if (emptyZoneIndex === -1) {
+          alert('Không còn chỗ trống trên sân!')
+          return
+        }
+        
+        // Remove from GY
+        setGy(gy.filter(c => c.id !== monster.id)) // Object comparison
+        
+        // Summon to field
+        const newMonsters = [...field.monsters]
+        newMonsters[emptyZoneIndex] = {
+          ...monster,
+          faceUp: true,
+          position: 'attack',
+          justSummoned: true,
+          originalAtk: monster.atk,
+          originalDef: monster.def,
+          equippedBy: `spell-${spellZoneIndex}` // Track equip relationship
+        }
+        setField({ ...field, monsters: newMonsters })
+        
+        alert(`Premature Burial: Đã trả 800 LP và hồi sinh ${monster.name}!`)
+        setGraveyardSelection({ active: false, list: [], onSelect: null, onCancel: null, message: '' })
+      },
+      onCancel: () => {
+        // Destroy spell if cancelled
+        const field = isPlayerTurn ? playerField : aiField
+        const setField = isPlayerTurn ? setPlayerField : setAiField
+        const setGy = isPlayerTurn ? setPlayerGraveyard : setAiGraveyard
+        const spellCard = field.spells[spellZoneIndex]
+        if (spellCard) {
+          setGy([...gy, spellCard])
+          const newSpells = [...field.spells]
+          newSpells[spellZoneIndex] = null
+          setField({ ...field, spells: newSpells })
+        }
+        setGraveyardSelection({ active: false, list: [], onSelect: null, onCancel: null, message: '' })
+      }
+    })
+  }
+
 
   const handleHeavyStorm = () => {
     const playerSpells = playerField.spells.filter(s => s !== null)
@@ -1596,6 +1780,37 @@ function Duel() {
     setDraggedCard(null)
     setSelectedZone(null)
     setShowCardOptions(false)
+  }
+
+  const handleTakeControl = (monster, fromOwner, toOwner, index, returnAtEndTurn = false) => {
+    const fromField = fromOwner === 'player' ? playerField : aiField
+    const setFromField = fromOwner === 'player' ? setPlayerField : setAiField
+    const toField = toOwner === 'player' ? playerField : aiField
+    const setToField = toOwner === 'player' ? setPlayerField : setAiField
+    
+    // Find empty zone on target field
+    const emptyZoneIndex = toField.monsters.findIndex(m => m === null)
+    if (emptyZoneIndex === -1) {
+      alert('Không còn chỗ trống trên sân để chiếm quái thú!')
+      return false
+    }
+    
+    // Remove from source field
+    const newFromMonsters = [...fromField.monsters]
+    newFromMonsters[index] = null
+    setFromField({ ...fromField, monsters: newFromMonsters })
+    
+    // Add to target field
+    const newToMonsters = [...toField.monsters]
+    newToMonsters[emptyZoneIndex] = {
+      ...monster,
+      originalOwner: fromOwner,
+      returnAtEndTurn: returnAtEndTurn,
+      justSummoned: false // Can attack immediately if it wasn't just summoned this turn? 
+      // Usually control effects allow attacking.
+    }
+    setToField({ ...toField, monsters: newToMonsters })
+    return true
   }
 
   const handleCancelGraveyardSelection = () => {
