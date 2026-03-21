@@ -301,7 +301,6 @@ function Duel() {
         return
       }
 
-      // Sort monsters by ATK to pick the strongest
       const monstersInHand = aiHand
         .map((c, i) => ({ card: c, index: i }))
         .filter(m => m.card.type.includes('Monster'))
@@ -309,6 +308,10 @@ function Duel() {
 
       const availableMonsters = aiField.monsters.filter(m => m !== null)
       const emptyZoneIndex = aiField.monsters.findIndex(m => m === null)
+
+      const strongestPlayerMonster = playerField.monsters
+        .filter(m => m !== null && m.faceUp)
+        .sort((a, b) => (b.card.position === 'attack' ? b.card.atk : b.card.def) - (a.card.position === 'attack' ? a.card.atk : a.card.def))[0]
 
       for (const m of monstersInHand) {
         const level = m.card.level || 0
@@ -318,34 +321,46 @@ function Duel() {
         else if (level >= 5) tributesNeeded = 1
 
         if (tributesNeeded === 0 && emptyZoneIndex !== -1) {
-          // Normal Summon
+          // Normal Summon or Set
           const card = m.card
+          let position = 'attack'
+          let faceUp = true
+          
+          // Strategy: If card's ATK can't beat strongest player monster, but DEF is high, SET it
+          if (strongestPlayerMonster && card.atk < (strongestPlayerMonster.card.position === 'attack' ? strongestPlayerMonster.card.atk : strongestPlayerMonster.card.def)) {
+            if (card.def > card.atk) {
+              position = 'defense'
+              faceUp = false
+            }
+          }
+
           setAiHand(prev => prev.filter((_, i) => i !== m.index))
           setAiField(prev => {
             const newMonsters = [...prev.monsters]
-            newMonsters[emptyZoneIndex] = { ...card, faceUp: true, position: 'attack', justSummoned: true }
+            newMonsters[emptyZoneIndex] = { ...card, faceUp, position, justSummoned: true }
             return { ...prev, monsters: newMonsters }
           })
           setNormalSummonUsed(true)
-          console.log(`AI Normal Summoned ${card.name}`)
+          console.log(`AI ${faceUp ? 'Normal Summoned' : 'Set'} ${card.name}`)
           break
         } else if (tributesNeeded > 0 && availableMonsters.length >= tributesNeeded) {
-          // Tribute Summon
+          // Tribute Summon (Always Attack for now, these are boss monsters)
           const card = m.card
           
-          // Selection logic: pick the first N monsters to tribute
           setAiField(prev => {
             const newMonsters = [...prev.monsters]
-            let tCount = 0
-            for (let i = 0; i < newMonsters.length; i++) {
-              if (newMonsters[i] !== null && tCount < tributesNeeded) {
-                setAiGraveyard(gy => [...gy, newMonsters[i]])
-                newMonsters[i] = null
-                tCount++
-              }
+            // Pick lowest ATK monsters as tributes
+            const tributes = aiField.monsters
+              .map((m, i) => m ? { ...m, index: i } : null)
+              .filter(m => m !== null)
+              .sort((a, b) => a.atk - b.atk)
+              .slice(0, tributesNeeded)
+
+            for (const t of tributes) {
+              setAiGraveyard(gy => [...gy, newMonsters[t.index]])
+              newMonsters[t.index] = null
             }
             
-            // Re-find empty zone after tributes
             const newEmptyZone = newMonsters.findIndex(mz => mz === null)
             newMonsters[newEmptyZone] = { ...card, faceUp: true, position: 'attack', justSummoned: true }
             return { ...prev, monsters: newMonsters }
@@ -443,29 +458,47 @@ function Duel() {
 
       // 4. Monster Reborn
       const rebornIndex = aiHand.findIndex(c => c.name === 'Monster Reborn')
-      const aiGYMonsters = aiGraveyard.filter(c => c.type.includes('Monster'))
       const aiEmptyZone = aiField.monsters.findIndex(m => m === null)
 
-      if (rebornIndex !== -1 && aiEmptyZone !== -1 && aiGYMonsters.length > 0) {
-        const card = aiHand[rebornIndex]
-        const target = aiGYMonsters.sort((a, b) => b.atk - a.atk)[0]
-        console.log(`AI activating Monster Reborn on ${target.name}`)
-        
-        setAiHand(prev => prev.filter((_, i) => i !== rebornIndex))
-        setAiGraveyard(prev => {
-          const newGY = [...prev]
-          newGY.push(card)
-          const targetInGY = newGY.findIndex(c => c === target)
-          if (targetInGY !== -1) newGY.splice(targetInGY, 1)
-          return newGY
-        })
-        
-        setAiField(prev => {
-          const newMonsters = [...prev.monsters]
-          newMonsters[aiEmptyZone] = { ...target, faceUp: true, position: 'attack' }
-          return { ...prev, monsters: newMonsters }
-        })
-        await new Promise(r => setTimeout(r, 1000))
+      if (rebornIndex !== -1 && aiEmptyZone !== -1) {
+        const allGYMonsters = [
+          ...aiGraveyard.map(c => ({ card: c, owner: 'ai' })),
+          ...playerGraveyard.map(c => ({ card: c, owner: 'player' }))
+        ].filter(item => item.card.type.includes('Monster'))
+
+        if (allGYMonsters.length > 0) {
+          const card = aiHand[rebornIndex]
+          const bestTarget = allGYMonsters.sort((a, b) => b.card.atk - a.card.atk)[0]
+          console.log(`AI activating Monster Reborn on ${bestTarget.card.name} from ${bestTarget.owner}'s GY`)
+          
+          setAiHand(prev => prev.filter((_, i) => i !== rebornIndex))
+          
+          // Remove from correct GY
+          if (bestTarget.owner === 'ai') {
+            setAiGraveyard(prev => {
+              const newGY = [...prev]
+              newGY.push(card) // Push Monster Reborn itself
+              const idx = newGY.findIndex(c => c === bestTarget.card)
+              if (idx !== -1) newGY.splice(idx, 1)
+              return newGY
+            })
+          } else {
+            setAiGraveyard(prev => [...prev, card])
+            setPlayerGraveyard(prev => {
+              const newGY = [...prev]
+              const idx = newGY.findIndex(c => c === bestTarget.card)
+              if (idx !== -1) newGY.splice(idx, 1)
+              return newGY
+            })
+          }
+          
+          setAiField(prev => {
+            const newMonsters = [...prev.monsters]
+            newMonsters[aiEmptyZone] = { ...bestTarget.card, faceUp: true, position: 'attack', justSummoned: false }
+            return { ...prev, monsters: newMonsters }
+          })
+          await new Promise(r => setTimeout(r, 1000))
+        }
       }
 
       // 5. Set remaining Traps
@@ -501,32 +534,44 @@ function Duel() {
         return
       }
 
-      const playerMonsters = playerField.monsters
-        .map((m, i) => m ? { card: m, index: i } : null)
-        .filter(m => m !== null)
+      // Sort AI attackers by ATK to maximize damage
+      const attackers = aiMonsters.sort((a, b) => b.card.atk - a.card.atk)
 
-      // Sequential attacks
-      for (const attacker of aiMonsters) {
+      for (const attacker of attackers) {
+        // Re-check field (in case something happened during previous attack)
+        if (!aiField.monsters[attacker.index]) continue
+
+        const playerMonsters = playerField.monsters
+          .map((m, i) => m ? { card: m, index: i } : null)
+          .filter(m => m !== null)
+
         console.log(`AI evaluating attack for ${attacker.card.name}`)
         
+        // Lethal check: If direct attack wins, do it
         if (playerMonsters.length === 0) {
-          // Direct attack
-          handleDirectAttack(attacker)
-          await new Promise(r => setTimeout(r, 2000))
-        } else {
-          // Find a target AI can beat
-          const target = playerMonsters.find(p => {
-            if (p.card.faceUp) {
-              if (p.card.position === 'attack') return attacker.card.atk > p.card.atk
-              return attacker.card.atk > p.card.def
-            }
-            return true // Attack face-down monsters
-          })
+           handleDirectAttack(attacker)
+           await new Promise(r => setTimeout(r, 2000))
+           continue
+        }
 
-          if (target) {
-            handleBattle(attacker, target)
-            await new Promise(r => setTimeout(r, 2500))
+        // Target selection
+        // 1. Can we destroy a monster and deal damage?
+        const beatableMonsters = playerMonsters.filter(p => {
+          if (p.card.faceUp) {
+            if (p.card.position === 'attack') return attacker.card.atk > p.card.atk
+            return attacker.card.atk > p.card.def
           }
+          return true // Risks of face-down, but AI plays aggressive in Hard Mode
+        }).sort((a, b) => {
+          // Prioritize attack position monsters to deal damage
+          if (a.card.position === 'attack' && b.card.position !== 'attack') return -1
+          if (a.card.position !== 'attack' && b.card.position === 'attack') return 1
+          return b.card.atk - a.card.atk 
+        })
+
+        if (beatableMonsters.length > 0) {
+          handleBattle(attacker, beatableMonsters[0])
+          await new Promise(r => setTimeout(r, 2500))
         }
       }
       
