@@ -607,82 +607,103 @@ function Duel() {
   const proceedEndTurn = () => {
     const nextTurn = currentTurn === 'player' ? 'ai' : 'player'
     
-    // Enable trap cards that were set this turn
-    const currentField = currentTurn === 'player' ? playerField : aiField
-    const setCurrentField = currentTurn === 'player' ? setPlayerField : setAiField
-    
-    const updatedSpells = currentField.spells.map(card => {
-      if (card && !card.faceUp && card.type.includes('Trap')) {
-        return { ...card, canActivate: true }
-      }
-      return card
-    })
-    
-    setCurrentField({ ...currentField, spells: updatedSpells })
-    
-    // Return controlled monsters
-    const returnMonsters = (sourceField, setSourceField, targetField, setTargetField, sourceName) => {
-      let currentSourceMonsters = [...sourceField.monsters]
-      let currentTargetMonsters = [...targetField.monsters]
-      let changed = false
-      
-      currentSourceMonsters = currentSourceMonsters.map((m, i) => {
-        if (m && m.returnAtEndTurn) {
-          const emptyZone = currentTargetMonsters.findIndex(mz => mz === null)
-          if (emptyZone !== -1) {
-            currentTargetMonsters[emptyZone] = { ...m, returnAtEndTurn: false, originalOwner: null }
-            changed = true
-            return null
-          } else {
-            // Field full, send to GY
-            const cardToGY = { ...m, returnAtEndTurn: false, originalOwner: null }
-            if (sourceName === 'player') {
-              setPlayerGraveyard(prev => [...prev, cardToGY])
-            } else {
-              setAiGraveyard(prev => [...prev, cardToGY])
-            }
-            changed = true
-            return null
-          }
-        }
-        return m
-      })
-      
-      if (changed) {
-        setSourceField({ ...sourceField, monsters: currentSourceMonsters })
-        setTargetField({ ...targetField, monsters: currentTargetMonsters })
-      }
-    }
-
+    // 1. Enable trap cards and Return controlled monsters
     if (currentTurn === 'player') {
-      returnMonsters(playerField, setPlayerField, aiField, setAiField, 'player')
+      // Player Ending turn: Update player field (traps) and return player-controlled AI monsters
+      setPlayerField(prev => {
+        const updatedSpells = prev.spells.map(card => {
+          if (card && !card.faceUp && card.type.includes('Trap')) {
+            return { ...card, canActivate: true }
+          }
+          return card
+        })
+        
+        // Find monsters to return to AI
+        const monstersToReturn = prev.monsters.filter(m => m && m.returnAtEndTurn)
+        if (monstersToReturn.length > 0) {
+          setAiField(aiPrev => {
+            const nextAiMonsters = [...aiPrev.monsters]
+            monstersToReturn.forEach(m => {
+              const emptyZone = nextAiMonsters.findIndex(mz => mz === null)
+              if (emptyZone !== -1) {
+                nextAiMonsters[emptyZone] = { ...m, returnAtEndTurn: false, originalOwner: null }
+              } else {
+                setAiGraveyard(gy => [...gy, { ...m, returnAtEndTurn: false, originalOwner: null }])
+              }
+            })
+            return { ...aiPrev, monsters: nextAiMonsters }
+          })
+          
+          const newPlayerMonsters = prev.monsters.map(m => (m && m.returnAtEndTurn) ? null : m)
+          return { ...prev, spells: updatedSpells, monsters: newPlayerMonsters }
+        }
+        
+        return { ...prev, spells: updatedSpells }
+      })
     } else {
-      returnMonsters(aiField, setAiField, playerField, setPlayerField, 'ai')
+      // AI Ending turn: Update AI field (traps) and return AI-controlled player monsters
+      setAiField(prev => {
+        const updatedSpells = prev.spells.map(card => {
+          if (card && !card.faceUp && card.type.includes('Trap')) {
+            return { ...card, canActivate: true }
+          }
+          return card
+        })
+        
+        const monstersToReturn = prev.monsters.filter(m => m && m.returnAtEndTurn)
+        if (monstersToReturn.length > 0) {
+          setPlayerField(pPrev => {
+            const nextPMonsters = [...pPrev.monsters]
+            monstersToReturn.forEach(m => {
+              const emptyZone = nextPMonsters.findIndex(mz => mz === null)
+              if (emptyZone !== -1) {
+                nextPMonsters[emptyZone] = { ...m, returnAtEndTurn: false, originalOwner: null }
+              } else {
+                setPlayerGraveyard(gy => [...gy, { ...m, returnAtEndTurn: false, originalOwner: null }])
+              }
+            })
+            return { ...pPrev, monsters: nextPMonsters }
+          })
+          
+          const newAiMonsters = prev.monsters.map(m => (m && m.returnAtEndTurn) ? null : m)
+          return { ...prev, spells: updatedSpells, monsters: newAiMonsters }
+        }
+        
+        return { ...prev, spells: updatedSpells }
+      })
     }
-
-    setCurrentTurn(nextTurn)
     
-    // Reset normal summon for next turn
+    setCurrentTurn(nextTurn)
     setNormalSummonUsed(false)
     
-    // Draw a card for the next player
-    if (nextTurn === 'player' && playerDeck.length > 0) {
+    // Draw a card for the next player using functional updates
+    if (nextTurn === 'player') {
       if (skipNextDraw.player) {
         alert('Time Seal: Bạn bỏ qua Draw Phase!')
         setSkipNextDraw(prev => ({ ...prev, player: false }))
       } else {
-        const newCard = playerDeck[0]
-        setPlayerHand([...playerHand, newCard])
-        setPlayerDeck(playerDeck.slice(1))
+        setPlayerDeck(prevDeck => {
+          if (prevDeck.length > 0) {
+            const newCard = prevDeck[0]
+            setPlayerHand(prevHand => [...prevHand, newCard])
+            return prevDeck.slice(1)
+          }
+          return prevDeck
+        })
       }
-    } else if (nextTurn === 'ai' && aiDeck.length > 0) {
+    } else if (nextTurn === 'ai') {
       if (skipNextDraw.ai) {
         alert('Time Seal: Đối thủ bỏ qua Draw Phase!')
         setSkipNextDraw(prev => ({ ...prev, ai: false }))
       } else {
-        const newCard = aiDeck[0]
-        setAiHand([...aiHand, newCard])
-        setAiDeck(aiDeck.slice(1))
+        setAiDeck(prevDeck => {
+          if (prevDeck.length > 0) {
+            const newCard = prevDeck[0]
+            setAiHand(prevHand => [...prevHand, newCard])
+            return prevDeck.slice(1)
+          }
+          return prevDeck
+        })
       }
     }
   }
