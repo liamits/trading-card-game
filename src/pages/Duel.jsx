@@ -94,6 +94,17 @@ function Duel() {
   
   const [duelTurnCount, setDuelTurnCount] = useState(1)
   
+  // Refs for AI to avoid stale closures
+  const playerFieldRef = useRef(playerField)
+  const aiFieldRef = useRef(aiField)
+  const playerHandRef = useRef(playerHand)
+  const aiHandRef = useRef(aiHand)
+
+  useEffect(() => { playerFieldRef.current = playerField }, [playerField])
+  useEffect(() => { aiFieldRef.current = aiField }, [aiField])
+  useEffect(() => { playerHandRef.current = playerHand }, [playerHand])
+  useEffect(() => { aiHandRef.current = aiHand }, [aiHand])
+  
   // Chain System States
   const [chainStack, setChainStack] = useState([])
   const [chainPrompt, setChainPrompt] = useState({
@@ -301,19 +312,20 @@ function Duel() {
         return
       }
 
-      const monstersInHand = aiHand
+      const monstersInHand = aiHandRef.current
         .map((c, i) => ({ card: c, index: i }))
         .filter(m => m.card.type.includes('Monster'))
         .sort((a, b) => b.card.atk - a.card.atk)
 
-      const availableMonsters = aiField.monsters.filter(m => m !== null)
-      const emptyZoneIndex = aiField.monsters.findIndex(m => m === null)
+      const availableMonsters = aiFieldRef.current.monsters.filter(m => m !== null)
+      const emptyZoneIndex = aiFieldRef.current.monsters.findIndex(m => m === null)
 
-      const strongestPlayerMonster = playerField.monsters
+      const strongestPlayerMonster = playerFieldRef.current.monsters
         .filter(m => m !== null && m.faceUp)
         .sort((a, b) => (b.card.position === 'attack' ? b.card.atk : b.card.def) - (a.card.position === 'attack' ? a.card.atk : a.card.def))[0]
 
       for (const m of monstersInHand) {
+        // ... (level and tribute logic)
         const level = m.card.level || 0
         let tributesNeeded = 0
         if (level >= 10) tributesNeeded = 3
@@ -321,12 +333,10 @@ function Duel() {
         else if (level >= 5) tributesNeeded = 1
 
         if (tributesNeeded === 0 && emptyZoneIndex !== -1) {
-          // Normal Summon or Set
           const card = m.card
           let position = 'attack'
           let faceUp = true
           
-          // Strategy: If card's ATK can't beat strongest player monster, but DEF is high, SET it
           if (strongestPlayerMonster && card.atk < (strongestPlayerMonster.card.position === 'attack' ? strongestPlayerMonster.card.atk : strongestPlayerMonster.card.def)) {
             if (card.def > card.atk) {
               position = 'defense'
@@ -334,39 +344,50 @@ function Duel() {
             }
           }
 
-          setAiHand(prev => prev.filter((_, i) => i !== m.index))
+          const newHand = aiHandRef.current.filter((_, i) => i !== m.index)
+          setAiHand(newHand)
+          aiHandRef.current = newHand
+
           setAiField(prev => {
             const newMonsters = [...prev.monsters]
             newMonsters[emptyZoneIndex] = { ...card, faceUp, position, justSummoned: true }
-            return { ...prev, monsters: newMonsters }
+            const next = { ...prev, monsters: newMonsters }
+            aiFieldRef.current = next
+            return next
           })
           setNormalSummonUsed(true)
           console.log(`AI ${faceUp ? 'Normal Summoned' : 'Set'} ${card.name}`)
           break
         } else if (tributesNeeded > 0 && availableMonsters.length >= tributesNeeded) {
-          // Tribute Summon (Always Attack for now, these are boss monsters)
           const card = m.card
           
+          const tributes = aiFieldRef.current.monsters
+            .map((m, i) => m ? { ...m, index: i } : null)
+            .filter(m => m !== null)
+            .sort((a, b) => a.atk - b.atk)
+            .slice(0, tributesNeeded)
+
           setAiField(prev => {
             const newMonsters = [...prev.monsters]
-            // Pick lowest ATK monsters as tributes
-            const tributes = aiField.monsters
-              .map((m, i) => m ? { ...m, index: i } : null)
-              .filter(m => m !== null)
-              .sort((a, b) => a.atk - b.atk)
-              .slice(0, tributesNeeded)
-
             for (const t of tributes) {
-              setAiGraveyard(gy => [...gy, newMonsters[t.index]])
               newMonsters[t.index] = null
             }
-            
             const newEmptyZone = newMonsters.findIndex(mz => mz === null)
             newMonsters[newEmptyZone] = { ...card, faceUp: true, position: 'attack', justSummoned: true }
-            return { ...prev, monsters: newMonsters }
+            const next = { ...prev, monsters: newMonsters }
+            aiFieldRef.current = next
+            return next
+          })
+
+          setAiGraveyard(prev => {
+            const next = [...prev, ...tributes]
+            // (Note: tributes are simpler than cards, but for GY it's fine)
+            return next
           })
           
-          setAiHand(prev => prev.filter((_, i) => i !== m.index))
+          const newHand = aiHandRef.current.filter((_, i) => i !== m.index)
+          setAiHand(newHand)
+          aiHandRef.current = newHand
           setNormalSummonUsed(true)
           console.log(`AI Tribute Summoned ${card.name}`)
           break
@@ -524,7 +545,7 @@ function Duel() {
     return new Promise(async (resolve) => {
       setBattlePhase(true)
       
-      const aiMonsters = aiField.monsters
+      const aiMonsters = aiFieldRef.current.monsters
         .map((m, i) => m ? { card: m, index: i } : null)
         .filter(m => m !== null && m.card.position === 'attack')
       
@@ -539,9 +560,9 @@ function Duel() {
 
       for (const attacker of attackers) {
         // Re-check field (in case something happened during previous attack)
-        if (!aiField.monsters[attacker.index]) continue
+        if (!aiFieldRef.current.monsters[attacker.index]) continue
 
-        const playerMonsters = playerField.monsters
+        const playerMonsters = playerFieldRef.current.monsters
           .map((m, i) => m ? { card: m, index: i } : null)
           .filter(m => m !== null)
 
