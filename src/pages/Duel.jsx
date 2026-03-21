@@ -122,11 +122,21 @@ function Duel() {
         setBattlePhase(phase)
         setCurrentTurn(turn)
       })
+
+      socket.on('opponent-field-update', (field) => {
+        setAiField(field)
+      })
+
+      socket.on('opponent-gy-update', (gy) => {
+        setAiGraveyard(gy)
+      })
     }
 
     return () => {
       socket.off('opponent-lp-update')
       socket.off('opponent-phase-update')
+      socket.off('opponent-field-update')
+      socket.off('opponent-gy-update')
     }
   }, [isMultiplayer, roomId])
 
@@ -141,6 +151,18 @@ function Duel() {
       socket.emit('update-phase', { roomId, phase: battlePhase, turn: currentTurn })
     }
   }, [battlePhase, currentTurn, isMultiplayer, roomId])
+
+  useEffect(() => {
+    if (isMultiplayer && roomId) {
+      socket.emit('update-field', { roomId, field: playerField })
+    }
+  }, [playerField, isMultiplayer, roomId])
+
+  useEffect(() => {
+    if (isMultiplayer && roomId) {
+      socket.emit('update-gy', { roomId, gy: playerGraveyard })
+    }
+  }, [playerGraveyard, isMultiplayer, roomId])
 
   useEffect(() => {
     // Check win/lose condition
