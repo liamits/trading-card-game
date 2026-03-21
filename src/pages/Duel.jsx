@@ -3199,6 +3199,9 @@ function Duel() {
                 className={`zone spell-trap-zone ${chainPrompt.active && chainPrompt.player === (currentTurn === 'player' ? 'ai' : 'player') && card && !card.faceUp ? 'chain-target' : ''}`}
                 onClick={() => {
                   if (chainPrompt.active && chainPrompt.player === (currentTurn === 'player' ? 'ai' : 'player') && card && !card.faceUp) {
+                    if (isMultiplayer && roomId) {
+                      socket.emit('chain-response', { roomId, response: 'yes' })
+                    }
                     activateSetCard(card, i, currentTurn === 'player' ? 'ai' : 'player')
                   }
                 }}
@@ -3394,6 +3397,9 @@ function Duel() {
                 handleFusionMaterialSelect(card, 'hand', i)
               } else if (chainPrompt.active && chainPrompt.player === 'player' && card.name.toLowerCase().includes('kuriboh')) {
                 // Activate Kuriboh
+                if (isMultiplayer && roomId) {
+                  socket.emit('chain-response', { roomId, response: 'yes' })
+                }
                 handleActivateKuriboh(i)
               } else if (currentTurn === 'player') {
                 handleHandCardClick(card, i)
