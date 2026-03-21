@@ -85,6 +85,37 @@ io.on('connection', (socket) => {
     }
   })
 
+  socket.on('start-game', ({ roomId, characterData }) => {
+    const room = rooms.get(roomId)
+    if (room && room.host === socket.id) {
+      room.status = 'playing'
+      // Store character/deck data for each player in room
+      const playerIndex = room.players.findIndex(p => p.id === socket.id)
+      if (playerIndex !== -1) {
+        room.players[playerIndex].character = characterData
+      }
+      io.to(roomId).emit('duel-loading', room)
+      console.log(`⚔️ Duel starting in room: ${roomId}`)
+    }
+  })
+
+  socket.on('player-ready', ({ roomId, characterData }) => {
+    const room = rooms.get(roomId)
+    if (room) {
+      const playerIndex = room.players.findIndex(p => p.id === socket.id)
+      if (playerIndex !== -1) {
+        room.players[playerIndex].character = characterData
+      }
+      
+      // If both players have characters, start the duel
+      const allReady = room.players.every(p => p.character)
+      if (allReady && room.players.length === 2) {
+        io.to(roomId).emit('duel-start', room)
+        console.log(`🎮 All players ready in room ${roomId}. Duel started!`)
+      }
+    }
+  })
+
   socket.on('disconnect', () => {
     console.log('👤 User disconnected:', socket.id)
     // Clean up rooms if host leaves

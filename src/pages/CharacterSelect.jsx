@@ -1,15 +1,23 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
+import io from 'socket.io-client'
 import './CharacterSelect.css'
+
+const socket = io('http://localhost:5000')
 
 function CharacterSelect() {
   const navigate = useNavigate()
+  const location = useLocation()
+  const { roomId, isMultiplayer } = location.state || {}
+  
   const [characters, setCharacters] = useState([])
   const [playerCharacter, setPlayerCharacter] = useState(null)
   const [aiCharacter, setAiCharacter] = useState(null)
+  const [opponentCharacter, setOpponentCharacter] = useState(null)
   const [loading, setLoading] = useState(true)
   const [selectingFor, setSelectingFor] = useState('player') // 'player' or 'ai'
   const [showDuelLoading, setShowDuelLoading] = useState(true)
+  const [isReady, setIsReady] = useState(false)
 
   useEffect(() => {
     // Show duel loading for 2 seconds when entering this page
@@ -18,8 +26,28 @@ function CharacterSelect() {
       fetchCharacters()
     }, 2000)
 
-    return () => clearTimeout(timer)
-  }, [])
+    if (isMultiplayer && roomId) {
+      socket.on('duel-start', (room) => {
+        const me = room.players.find(p => p.id === socket.id)
+        const opponent = room.players.find(p => p.id !== socket.id)
+        
+        navigate('/duel', { 
+          state: { 
+            player: me.character, 
+            opponent: opponent.character,
+            isMultiplayer: true,
+            roomId: roomId,
+            myId: socket.id
+          } 
+        })
+      })
+    }
+
+    return () => {
+      clearTimeout(timer)
+      socket.off('duel-start')
+    }
+  }, [isMultiplayer, roomId])
 
   const fetchCharacters = async () => {
     try {
@@ -34,11 +62,17 @@ function CharacterSelect() {
   }
 
   const handleCharacterSelect = (character) => {
-    if (selectingFor === 'player') {
+    if (isMultiplayer) {
       setPlayerCharacter(character)
-      setSelectingFor('ai')
+      setIsReady(true)
+      socket.emit('player-ready', { roomId, characterData: character })
     } else {
-      setAiCharacter(character)
+      if (selectingFor === 'player') {
+        setPlayerCharacter(character)
+        setSelectingFor('ai')
+      } else {
+        setAiCharacter(character)
+      }
     }
   }
 
@@ -57,6 +91,7 @@ function CharacterSelect() {
     setPlayerCharacter(null)
     setAiCharacter(null)
     setSelectingFor('player')
+    setIsReady(false)
   }
 
   if (showDuelLoading || loading) {
@@ -75,7 +110,7 @@ function CharacterSelect() {
 
   return (
     <div className="character-select">
-      <button className="back-btn" onClick={() => navigate('/game')}>
+      <button className="back-btn" onClick={() => navigate(isMultiplayer ? '/lobby' : '/game')}>
         ← Back
       </button>
 
@@ -100,7 +135,7 @@ function CharacterSelect() {
 
         <div className="vs-section">
           <div className="vs-text">VS</div>
-          {playerCharacter && aiCharacter && (
+          {!isMultiplayer && playerCharacter && aiCharacter && (
             <>
               <button className="start-duel-btn" onClick={startDuel}>
                 ⚔️ START DUEL
@@ -110,10 +145,21 @@ function CharacterSelect() {
               </button>
             </>
           )}
+          {isMultiplayer && isReady && (
+            <div className="waiting-opponent">
+              <div className="pulse-dot"></div>
+              <p>WAITING FOR OPPONENT...</p>
+            </div>
+          )}
         </div>
 
         <div className="fighter-display ai-display">
-          {aiCharacter ? (
+          {isMultiplayer ? (
+            <div className="empty-fighter">
+              <div className="question-mark">?</div>
+              <p>Opponent</p>
+            </div>
+          ) : aiCharacter ? (
             <>
               <img src={aiCharacter.avatar} alt={aiCharacter.name} className="fighter-avatar" />
               <div className="fighter-info">
@@ -134,7 +180,9 @@ function CharacterSelect() {
       <div className="selection-area">
         <div className="selection-header">
           <h3>
-            {selectingFor === 'player' ? '👤 SELECT YOUR CHARACTER' : '🤖 SELECT AI OPPONENT'}
+            {isMultiplayer 
+              ? (isReady ? 'READY TO DUEL!' : '👤 SELECT YOUR CHARACTER')
+              : (selectingFor === 'player' ? '👤 SELECT YOUR CHARACTER' : '🤖 SELECT AI OPPONENT')}
           </h3>
         </div>
         

@@ -42,6 +42,10 @@ function Lobby() {
       alert('Chủ phòng đã thoát, phòng đã đóng!')
     })
 
+    socket.on('duel-loading', (room) => {
+      navigate('/character-select', { state: { roomId: room.id, isMultiplayer: true } })
+    })
+
     socket.on('error', (msg) => {
       setError(msg)
       setIsJoining(false)
@@ -75,9 +79,7 @@ function Lobby() {
       alert('Cần ít nhất 2 người để bắt đầu!')
       return
     }
-    // For now, just navigate to character select or duel
-    // We will sync this later
-    navigate('/duel', { state: { roomId: currentRoom.id, isMultiplayer: true } })
+    socket.emit('start-game', { roomId: currentRoom.id, userData: user })
   }
 
   const handleLeaveRoom = () => {
