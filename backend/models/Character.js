@@ -1,7 +1,7 @@
 import mongoose from 'mongoose'
 
 const cardSchema = new mongoose.Schema({
-  id: { type: Number, required: true },
+  id: { type: String, required: true },
   name: { type: String, required: true },
   type: { type: String, required: true },
   desc: String,

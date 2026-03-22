@@ -135,8 +135,15 @@ async function searchCard(cardName) {
     
     if (data.data && data.data.length > 0) {
       const card = data.data[0]
+      let finalId = String(card.id)
+      
+      // Override for Egyptian Gods due to API data mismatch
+      if (card.name === "Slifer the Sky Dragon") finalId = "10000020"
+      if (card.name === "The Winged Dragon of Ra") finalId = "10000010"
+      if (card.name === "Obelisk the Tormentor") finalId = "10000000"
+
       return {
-        id: card.id,
+        id: finalId,
         name: card.name,
         type: card.type,
         desc: card.desc,
@@ -145,7 +152,7 @@ async function searchCard(cardName) {
         level: card.level,
         race: card.race,
         attribute: card.attribute,
-        image_url: card.card_images[0].image_url
+        image_url: `https://images.ygoprodeck.com/images/cards/${finalId}.jpg`
       }
     }
     return null

@@ -371,148 +371,168 @@ function Duel() {
 
   const aiActionSummon = (aiLevel) => {
     return new Promise((resolve) => {
-      if (normalSummonUsed) {
-        setTimeout(resolve, 500)
-        return
-      }
-
-      // Level 1: Beginner - 50% chance to skip summoning even if possible
-      if (aiLevel === 1 && Math.random() < 0.5) {
-        setTimeout(resolve, 500)
-        return
-      }
-
-      const monstersInHand = aiHandRef.current
-        .map((c, i) => ({ card: c, index: i }))
-        .filter(m => m.card.type.includes('Monster'))
-        .sort((a, b) => b.card.atk - a.card.atk)
-
-      const availableMonsters = aiFieldRef.current.monsters.filter(m => m !== null)
-      const emptyZoneIndex = aiFieldRef.current.monsters.findIndex(m => m === null)
-
-      const strongestPlayerMonster = playerFieldRef.current.monsters
-        .filter(m => m !== null && m.faceUp)
-        .sort((a, b) => (b.position === 'attack' ? b.atk : b.def) - (a.position === 'attack' ? a.atk : a.def))[0]
-
-      for (const m of monstersInHand) {
-        // ... (level and tribute logic)
-        const level = m.card.level || 0
-        let tributesNeeded = 0
-        if (level >= 10) tributesNeeded = 3
-        else if (level >= 7) tributesNeeded = 2
-        else if (level >= 5) tributesNeeded = 1
-
-        if (tributesNeeded === 0 && emptyZoneIndex !== -1) {
-          const card = m.card
-          let position = 'attack'
-          let faceUp = true
-          
-          if (strongestPlayerMonster && card.atk < (strongestPlayerMonster.position === 'attack' ? strongestPlayerMonster.atk : strongestPlayerMonster.def)) {
-            if (card.def > card.atk) {
-              position = 'defense'
-              faceUp = false
-            }
-          }
-
-          const newHand = aiHandRef.current.filter((_, i) => i !== m.index)
-          setAiHand(newHand)
-          aiHandRef.current = newHand
-
-          setAiField(prev => {
-            const newMonsters = [...prev.monsters]
-            newMonsters[emptyZoneIndex] = { ...card, faceUp, position, justSummoned: true }
-            const next = { ...prev, monsters: newMonsters }
-            aiFieldRef.current = next
-            return next
-          })
-          setNormalSummonUsed(true)
-          console.log(`AI ${faceUp ? 'Normal Summoned' : 'Set'} ${card.name}`)
-          break
-        } else if (tributesNeeded > 0 && availableMonsters.length >= tributesNeeded) {
-          const card = m.card
-          
-          const tributes = aiFieldRef.current.monsters
-            .map((m, i) => m ? { ...m, index: i } : null)
-            .filter(m => m !== null)
-            .sort((a, b) => a.atk - b.atk)
-            .slice(0, tributesNeeded)
-
-          setAiField(prev => {
-            const newMonsters = [...prev.monsters]
-            for (const t of tributes) {
-              newMonsters[t.index] = null
-            }
-            const newEmptyZone = newMonsters.findIndex(mz => mz === null)
-            newMonsters[newEmptyZone] = { ...card, faceUp: true, position: 'attack', justSummoned: true }
-            const next = { ...prev, monsters: newMonsters }
-            aiFieldRef.current = next
-            return next
-          })
-
-          setAiGraveyard(prev => {
-            const next = [...prev, ...tributes]
-            // (Note: tributes are simpler than cards, but for GY it's fine)
-            return next
-          })
-          
-          const newHand = aiHandRef.current.filter((_, i) => i !== m.index)
-          setAiHand(newHand)
-          aiHandRef.current = newHand
-          setNormalSummonUsed(true)
-          console.log(`AI Tribute Summoned ${card.name}`)
-          break
+      try {
+        if (normalSummonUsed) {
+          setTimeout(resolve, 500)
+          return
         }
+
+        // Level 1: Beginner - 50% chance to skip summoning even if possible
+        if (aiLevel === 1 && Math.random() < 0.5) {
+          setTimeout(resolve, 500)
+          return
+        }
+
+        const monstersInHand = aiHandRef.current
+          .map((c, i) => ({ card: c, index: i }))
+          .filter(m => m.card.type.includes('Monster'))
+          .sort((a, b) => b.card.atk - a.card.atk)
+
+        const availableMonsters = aiFieldRef.current.monsters.filter(m => m !== null)
+        const emptyZoneIndex = aiFieldRef.current.monsters.findIndex(m => m === null)
+
+        const strongestPlayerMonster = playerFieldRef.current.monsters
+          .filter(m => m !== null && m.faceUp)
+          .sort((a, b) => (b.position === 'attack' ? b.atk : b.def) - (a.position === 'attack' ? a.atk : a.def))[0]
+
+        for (const m of monstersInHand) {
+          const level = m.card.level || 0
+          let tributesNeeded = 0
+          if (level >= 10) tributesNeeded = 3
+          else if (level >= 7) tributesNeeded = 2
+          else if (level >= 5) tributesNeeded = 1
+
+          if (tributesNeeded === 0 && emptyZoneIndex !== -1) {
+            const card = m.card
+            let position = 'attack'
+            let faceUp = true
+            
+            if (strongestPlayerMonster && card.atk < (strongestPlayerMonster.position === 'attack' ? strongestPlayerMonster.atk : strongestPlayerMonster.def)) {
+              if (card.def > card.atk) {
+                position = 'defense'
+                faceUp = false
+              }
+            }
+
+            const newHand = aiHandRef.current.filter((_, i) => i !== m.index)
+            setAiHand(newHand)
+            aiHandRef.current = newHand
+
+            setAiField(prev => {
+              const newMonsters = [...prev.monsters]
+              newMonsters[emptyZoneIndex] = { ...card, faceUp, position, justSummoned: true }
+              const next = { ...prev, monsters: newMonsters }
+              aiFieldRef.current = next
+              return next
+            })
+            setNormalSummonUsed(true)
+            console.log(`AI ${faceUp ? 'Normal Summoned' : 'Set'} ${card.name}`)
+            break
+          } else if (tributesNeeded > 0 && availableMonsters.length >= tributesNeeded) {
+            const card = m.card
+            
+            const tributes = aiFieldRef.current.monsters
+              .map((mon, i) => mon ? { ...mon, index: i } : null)
+              .filter(mon => mon !== null)
+              .sort((a, b) => a.atk - b.atk)
+              .slice(0, tributesNeeded)
+
+            setAiField(prev => {
+              const newMonsters = [...prev.monsters]
+              for (const t of tributes) {
+                newMonsters[t.index] = null
+              }
+              const newEmptyZone = newMonsters.findIndex(mz => mz === null)
+              newMonsters[newEmptyZone] = { ...card, faceUp: true, position: 'attack', justSummoned: true }
+              const next = { ...prev, monsters: newMonsters }
+              aiFieldRef.current = next
+              return next
+            })
+
+            setAiGraveyard(prev => {
+              const next = [...prev, ...tributes]
+              return next
+            })
+            
+            const newHand = aiHandRef.current.filter((_, i) => i !== m.index)
+            setAiHand(newHand)
+            aiHandRef.current = newHand
+            setNormalSummonUsed(true)
+            console.log(`AI Tribute Summoned ${card.name}`)
+            break
+          }
+        }
+      } catch (err) {
+        console.error("Error in aiActionSummon:", err)
+      } finally {
+        setTimeout(resolve, 1000)
       }
-      
-      setTimeout(resolve, 1000)
     })
   }
 
   const aiActionSpells = (aiLevel) => {
     return new Promise(async (resolve) => {
-      // 1. Pot of Greed / Graceful Charity
-      const potIndex = aiHandRef.current.findIndex(c => c.name === 'Pot of Greed')
-      if (potIndex !== -1) {
-        const card = aiHandRef.current[potIndex]
-        console.log("AI activating Pot of Greed")
-        const newHand = aiHandRef.current.filter((_, i) => i !== potIndex)
-        setAiHand(newHand)
-        aiHandRef.current = newHand
-        
-        setAiGraveyard(prev => [...prev, card])
-        if (aiDeckRef.current.length >= 2) {
-          const drawn = aiDeckRef.current.slice(0, 2)
-          const handWithDrawn = [...aiHandRef.current, ...drawn]
-          setAiHand(handWithDrawn)
-          aiHandRef.current = handWithDrawn
+      try {
+        // 1. Pot of Greed / Graceful Charity
+        const potIndex = aiHandRef.current.findIndex(c => c.name === 'Pot of Greed')
+        if (potIndex !== -1) {
+          const card = aiHandRef.current[potIndex]
+          console.log("AI activating Pot of Greed")
+          const newHand = aiHandRef.current.filter((_, i) => i !== potIndex)
+          setAiHand(newHand)
+          aiHandRef.current = newHand
           
-          const newDeck = aiDeckRef.current.slice(2)
-          setAiDeck(newDeck)
-          aiDeckRef.current = newDeck
+          setAiGraveyard(prev => [...prev, card])
+          if (aiDeckRef.current.length >= 2) {
+            const drawn = aiDeckRef.current.slice(0, 2)
+            const handWithDrawn = [...aiHandRef.current, ...drawn]
+            setAiHand(handWithDrawn)
+            aiHandRef.current = handWithDrawn
+            
+            const newDeck = aiDeckRef.current.slice(2)
+            setAiDeck(newDeck)
+            aiDeckRef.current = newDeck
+          }
+          await new Promise(r => setTimeout(r, 1000))
         }
-        await new Promise(r => setTimeout(r, 1000))
-      }
 
-      // 2. Raigeki / Dark Hole
-      const raigekiIndex = aiHandRef.current.findIndex(c => c.name === 'Raigeki')
-      const darkHoleIndex = aiHandRef.current.findIndex(c => c.name === 'Dark Hole')
-      
-      if (raigekiIndex !== -1 && playerFieldRef.current.monsters.some(m => m !== null)) {
-        const pMonsters = playerFieldRef.current.monsters.filter(m => m !== null)
+        // 2. Raigeki / Dark Hole
+        const raigekiIndex = aiHandRef.current.findIndex(c => c.name === 'Raigeki')
+        const darkHoleIndex = aiHandRef.current.findIndex(c => c.name === 'Dark Hole')
         
-        // Smart AI (Level 4-5) only uses Raigeki if opponent has > 1 monster or a monster > 2400 ATK
-        if (aiLevel >= 4) {
-          const hasStrongMonster = pMonsters.some(m => m.atk > 2400)
-          if (pMonsters.length < 2 && !hasStrongMonster) {
-            console.log("AI Legendary/Hard is saving Raigeki for better timing")
-            // Don't return/resolve here, just go to next spell checks
+        if (raigekiIndex !== -1 && playerFieldRef.current.monsters.some(m => m !== null)) {
+          const pMonsters = playerFieldRef.current.monsters.filter(m => m !== null)
+          
+          // Smart AI (Level 4-5) only uses Raigeki if opponent has > 1 monster or a monster > 2400 ATK
+          if (aiLevel >= 4) {
+            const hasStrongMonster = pMonsters.some(m => m.atk > 2400)
+            if (pMonsters.length < 2 && !hasStrongMonster) {
+              console.log("AI Legendary/Hard is saving Raigeki for better timing")
+              // Don't return/resolve here, just go to next spell checks
+            } else {
+              const card = aiHandRef.current[raigekiIndex]
+              console.log("AI activating Raigeki")
+              const newHand = aiHandRef.current.filter((_, i) => i !== raigekiIndex)
+              setAiHand(newHand)
+              aiHandRef.current = newHand
+              
+              setAiGraveyard(prev => [...prev, card])
+              executeEffect(card, { 
+                isPlayerTurn: false,
+                playerField: playerFieldRef.current, setPlayerField,
+                aiField: aiFieldRef.current, setAiField,
+                playerGraveyard: playerGraveyardRef.current, setPlayerGraveyard,
+                aiGraveyard: aiGraveyardRef.current, setAiGraveyard
+              })
+              await new Promise(r => setTimeout(r, 1000))
+            }
           } else {
+            // Level 1-3 AI uses it immediately if player has monsters
             const card = aiHandRef.current[raigekiIndex]
             console.log("AI activating Raigeki")
             const newHand = aiHandRef.current.filter((_, i) => i !== raigekiIndex)
             setAiHand(newHand)
             aiHandRef.current = newHand
-            
             setAiGraveyard(prev => [...prev, card])
             executeEffect(card, { 
               isPlayerTurn: false,
@@ -523,263 +543,254 @@ function Duel() {
             })
             await new Promise(r => setTimeout(r, 1000))
           }
-        } else {
-          // Level 1-3 AI uses it immediately if player has monsters
-          const card = aiHandRef.current[raigekiIndex]
-          console.log("AI activating Raigeki")
-          const newHand = aiHandRef.current.filter((_, i) => i !== raigekiIndex)
-          setAiHand(newHand)
-          aiHandRef.current = newHand
-          setAiGraveyard(prev => [...prev, card])
-          executeEffect(card, { 
-            isPlayerTurn: false,
-            playerField: playerFieldRef.current, setPlayerField,
-            aiField: aiFieldRef.current, setAiField,
-            playerGraveyard: playerGraveyardRef.current, setPlayerGraveyard,
-            aiGraveyard: aiGraveyardRef.current, setAiGraveyard
-          })
-          await new Promise(r => setTimeout(r, 1000))
-        }
-      } else if (darkHoleIndex !== -1 && (playerFieldRef.current.monsters.some(m => m !== null) || aiFieldRef.current.monsters.some(m => m !== null))) {
-        // AI uses Dark Hole if player has more monsters
-        const pCount = playerFieldRef.current.monsters.filter(m => m !== null).length
-        const aCount = aiFieldRef.current.monsters.filter(m => m !== null).length
-        if (pCount >= aCount) {
-          const card = aiHandRef.current[darkHoleIndex]
-          console.log("AI activating Dark Hole")
-          const newHand = aiHandRef.current.filter((_, i) => i !== darkHoleIndex)
-          setAiHand(newHand)
-          aiHandRef.current = newHand
-          
-          setAiGraveyard(prev => [...prev, card])
-          // Destroy all monsters
-          const pDestroyed = playerFieldRef.current.monsters.filter(m => m !== null)
-          const aDestroyed = aiFieldRef.current.monsters.filter(m => m !== null)
-          setPlayerGraveyard(prev => [...prev, ...pDestroyed])
-          setAiGraveyard(prev => [...prev, ...aDestroyed])
-          setPlayerField(prev => {
-             const next = { ...prev, monsters: new Array(5).fill(null) }
-             playerFieldRef.current = next
-             return next
-          })
-          setAiField(prev => {
-             const next = { ...prev, monsters: new Array(5).fill(null) }
-             aiFieldRef.current = next
-             return next
-          })
-          await new Promise(r => setTimeout(r, 1000))
-        }
-      }
-
-      // 3. Change of Heart
-      const cohIndex = aiHandRef.current.findIndex(c => c.name === 'Change of Heart')
-      const emptyAiZone = aiFieldRef.current.monsters.findIndex(m => m === null)
-      const pMonsters = playerFieldRef.current.monsters.map((m, i) => m ? { card: m, index: i } : null).filter(m => m !== null)
-      
-      if (cohIndex !== -1 && emptyAiZone !== -1 && pMonsters.length > 0) {
-        const card = aiHandRef.current[cohIndex]
-        const target = pMonsters.sort((a, b) => b.card.atk - a.card.atk)[0]
-        console.log(`AI activating Change of Heart on ${target.card.name}`)
-        
-        const newHand = aiHandRef.current.filter((_, i) => i !== cohIndex)
-        setAiHand(newHand)
-        aiHandRef.current = newHand
-        setAiGraveyard(prev => [...prev, card])
-        
-        // Take control
-        setPlayerField(prev => {
-          const newMonsters = [...prev.monsters]
-          newMonsters[target.index] = null
-          const next = { ...prev, monsters: newMonsters }
-          playerFieldRef.current = next
-          return next
-        })
-        setAiField(prev => {
-          const newMonsters = [...prev.monsters]
-          newMonsters[emptyAiZone] = { ...target.card, returnAtEndTurn: true, originalOwner: 'player' }
-          const next = { ...prev, monsters: newMonsters }
-          aiFieldRef.current = next
-          return next
-        })
-        await new Promise(r => setTimeout(r, 1000))
-      }
-
-      // 4. Monster Reborn
-      const rebornIndex = aiHandRef.current.findIndex(c => c.name === 'Monster Reborn')
-      const aiEmptyZone = aiFieldRef.current.monsters.findIndex(m => m === null)
-
-      if (rebornIndex !== -1 && aiEmptyZone !== -1) {
-        const allGYMonsters = [
-          ...aiGraveyardRef.current.map(c => ({ card: c, owner: 'ai' })),
-          ...playerGraveyardRef.current.map(c => ({ card: c, owner: 'player' }))
-        ].filter(item => item.card.type.includes('Monster'))
-
-        if (allGYMonsters.length > 0) {
-          const card = aiHandRef.current[rebornIndex]
-          const bestTarget = allGYMonsters.sort((a, b) => b.card.atk - a.card.atk)[0]
-          console.log(`AI activating Monster Reborn on ${bestTarget.card.name} from ${bestTarget.owner}'s GY`)
-          
-          const newHand = aiHandRef.current.filter((_, i) => i !== rebornIndex)
-          setAiHand(newHand)
-          aiHandRef.current = newHand
-          
-          // Remove from correct GY
-          if (bestTarget.owner === 'ai') {
-            setAiGraveyard(prev => {
-              const newGY = [...prev]
-              newGY.push(card)
-              const idx = newGY.findIndex(c => c === bestTarget.card)
-              if (idx !== -1) newGY.splice(idx, 1)
-              return newGY
-            })
-          } else {
+        } else if (darkHoleIndex !== -1 && (playerFieldRef.current.monsters.some(m => m !== null) || aiFieldRef.current.monsters.some(m => m !== null))) {
+          // AI uses Dark Hole if player has more monsters
+          const pCount = playerFieldRef.current.monsters.filter(m => m !== null).length
+          const aCount = aiFieldRef.current.monsters.filter(m => m !== null).length
+          if (pCount >= aCount) {
+            const card = aiHandRef.current[darkHoleIndex]
+            console.log("AI activating Dark Hole")
+            const newHand = aiHandRef.current.filter((_, i) => i !== darkHoleIndex)
+            setAiHand(newHand)
+            aiHandRef.current = newHand
+            
             setAiGraveyard(prev => [...prev, card])
-            setPlayerGraveyard(prev => {
-              const newGY = [...prev]
-              const idx = newGY.findIndex(c => c === bestTarget.card)
-              if (idx !== -1) newGY.splice(idx, 1)
-              return newGY
+            // Destroy all monsters
+            const pDestroyed = playerFieldRef.current.monsters.filter(m => m !== null)
+            const aDestroyed = aiFieldRef.current.monsters.filter(m => m !== null)
+            setPlayerGraveyard(prev => [...prev, ...pDestroyed])
+            setAiGraveyard(prev => [...prev, ...aDestroyed])
+            setPlayerField(prev => {
+               const next = { ...prev, monsters: new Array(5).fill(null) }
+               playerFieldRef.current = next
+               return next
             })
+            setAiField(prev => {
+               const next = { ...prev, monsters: new Array(5).fill(null) }
+               aiFieldRef.current = next
+               return next
+            })
+            await new Promise(r => setTimeout(r, 1000))
           }
+        }
+
+        // 3. Change of Heart
+        const cohIndex = aiHandRef.current.findIndex(c => c.name === 'Change of Heart')
+        const emptyAiZone = aiFieldRef.current.monsters.findIndex(m => m === null)
+        const pMonsters = playerFieldRef.current.monsters.map((m, i) => m ? { card: m, index: i } : null).filter(m => m !== null)
+        
+        if (cohIndex !== -1 && emptyAiZone !== -1 && pMonsters.length > 0) {
+          const card = aiHandRef.current[cohIndex]
+          const target = pMonsters.sort((a, b) => b.card.atk - a.card.atk)[0]
+          console.log(`AI activating Change of Heart on ${target.card.name}`)
           
+          const newHand = aiHandRef.current.filter((_, i) => i !== cohIndex)
+          setAiHand(newHand)
+          aiHandRef.current = newHand
+          setAiGraveyard(prev => [...prev, card])
+          
+          // Take control
+          setPlayerField(prev => {
+            const newMonsters = [...prev.monsters]
+            newMonsters[target.index] = null
+            const next = { ...prev, monsters: newMonsters }
+            playerFieldRef.current = next
+            return next
+          })
           setAiField(prev => {
             const newMonsters = [...prev.monsters]
-            newMonsters[aiEmptyZone] = { ...bestTarget.card, faceUp: true, position: 'attack', justSummoned: false }
+            newMonsters[emptyAiZone] = { ...target.card, returnAtEndTurn: true, originalOwner: 'player' }
             const next = { ...prev, monsters: newMonsters }
             aiFieldRef.current = next
             return next
           })
           await new Promise(r => setTimeout(r, 1000))
         }
-      }
 
-      // 4.5 Megamorph (Kaiba Special)
-      const megaIndex = aiHandRef.current.findIndex(c => c.name === 'Megamorph')
-      if (megaIndex !== -1) {
-        const myLP = aiLP
-        const oppLP = playerLP
-        const aiMonsters = aiFieldRef.current.monsters.filter(m => m !== null)
-        const pMonsters = playerFieldRef.current.monsters.filter(m => m !== null)
+        // 4. Monster Reborn
+        const rebornIndex = aiHandRef.current.findIndex(c => c.name === 'Monster Reborn')
+        const aiEmptyZone = aiFieldRef.current.monsters.findIndex(m => m === null)
 
-        if ((myLP < oppLP && aiMonsters.length > 0) || (myLP > oppLP && pMonsters.length > 0)) {
-          const card = aiHandRef.current[megaIndex]
-          setAiHand(prev => prev.filter((_, i) => i !== megaIndex))
-          aiHandRef.current = aiHandRef.current.filter((_, i) => i !== megaIndex)
-          setAiGraveyard(prev => [...prev, card])
-          handleMegamorph(false) // Trigger AI logic for Megamorph
+        if (rebornIndex !== -1 && aiEmptyZone !== -1) {
+          const allGYMonsters = [
+            ...aiGraveyardRef.current.map(c => ({ card: c, owner: 'ai' })),
+            ...playerGraveyardRef.current.map(c => ({ card: c, owner: 'player' }))
+          ].filter(item => item.card.type.includes('Monster'))
+
+          if (allGYMonsters.length > 0) {
+            const card = aiHandRef.current[rebornIndex]
+            const bestTarget = allGYMonsters.sort((a, b) => b.card.atk - a.card.atk)[0]
+            console.log(`AI activating Monster Reborn on ${bestTarget.card.name} from ${bestTarget.owner}'s GY`)
+            
+            const newHand = aiHandRef.current.filter((_, i) => i !== rebornIndex)
+            setAiHand(newHand)
+            aiHandRef.current = newHand
+            
+            // Remove from correct GY
+            if (bestTarget.owner === 'ai') {
+              setAiGraveyard(prev => {
+                const newGY = [...prev]
+                newGY.push(card)
+                const idx = newGY.findIndex(c => c === bestTarget.card)
+                if (idx !== -1) newGY.splice(idx, 1)
+                return newGY
+              })
+            } else {
+              setAiGraveyard(prev => [...prev, card])
+              setPlayerGraveyard(prev => {
+                const newGY = [...prev]
+                const idx = newGY.findIndex(c => c === bestTarget.card)
+                if (idx !== -1) newGY.splice(idx, 1)
+                return newGY
+              })
+            }
+            
+            setAiField(prev => {
+              const newMonsters = [...prev.monsters]
+              newMonsters[aiEmptyZone] = { ...bestTarget.card, faceUp: true, position: 'attack', justSummoned: false }
+              const next = { ...prev, monsters: newMonsters }
+              aiFieldRef.current = next
+              return next
+            })
+            await new Promise(r => setTimeout(r, 1000))
+          }
+        }
+
+        // 4.5 Megamorph (Kaiba Special)
+        const megaIndex = aiHandRef.current.findIndex(c => c.name === 'Megamorph')
+        if (megaIndex !== -1) {
+          const myLP = aiLP
+          const oppLP = playerLP
+          const aiMonsters = aiFieldRef.current.monsters.filter(m => m !== null)
+          const pMonsters = playerFieldRef.current.monsters.filter(m => m !== null)
+
+          if ((myLP < oppLP && aiMonsters.length > 0) || (myLP > oppLP && pMonsters.length > 0)) {
+            const card = aiHandRef.current[megaIndex]
+            setAiHand(prev => prev.filter((_, i) => i !== megaIndex))
+            aiHandRef.current = aiHandRef.current.filter((_, i) => i !== megaIndex)
+            setAiGraveyard(prev => [...prev, card])
+            handleMegamorph(false) // Trigger AI logic for Megamorph
+            await new Promise(r => setTimeout(r, 1000))
+          }
+        }
+
+        // 5. Set remaining Traps
+        const trapIndex = aiHandRef.current.findIndex(c => c.type.includes('Trap'))
+        const emptySpellZone = aiFieldRef.current.spells.findIndex(s => s === null)
+        if (trapIndex !== -1 && emptySpellZone !== -1) {
+          const card = aiHandRef.current[trapIndex]
+          const newHand = aiHandRef.current.filter((_, i) => i !== trapIndex)
+          setAiHand(newHand)
+          aiHandRef.current = newHand
+          
+          setAiField(prev => {
+            const newSpells = [...prev.spells]
+            newSpells[emptySpellZone] = { ...card, faceUp: false, canActivate: false }
+            const next = { ...prev, spells: newSpells }
+            aiFieldRef.current = next
+            return next
+          })
           await new Promise(r => setTimeout(r, 1000))
         }
-      }
 
-      // 5. Set remaining Traps
-      const trapIndex = aiHandRef.current.findIndex(c => c.type.includes('Trap'))
-      const emptySpellZone = aiFieldRef.current.spells.findIndex(s => s === null)
-      if (trapIndex !== -1 && emptySpellZone !== -1) {
-        const card = aiHandRef.current[trapIndex]
-        const newHand = aiHandRef.current.filter((_, i) => i !== trapIndex)
-        setAiHand(newHand)
-        aiHandRef.current = newHand
+        // 6. Time Wizard Effect
+        const timeWizardIndex = aiFieldRef.current.monsters.findIndex(m => m && m.name.toLowerCase().includes('time wizard') && m.faceUp)
+        const pMonstersCount = playerFieldRef.current.monsters.filter(m => m !== null).length
         
-        setAiField(prev => {
-          const newSpells = [...prev.spells]
-          newSpells[emptySpellZone] = { ...card, faceUp: false, canActivate: false }
-          const next = { ...prev, spells: newSpells }
-          aiFieldRef.current = next
-          return next
-        })
-        await new Promise(r => setTimeout(r, 1000))
+        if (timeWizardIndex !== -1 && pMonstersCount > 0) {
+          console.log("AI deciding to use Time Wizard effect...")
+          // AI uses it if player has monsters. Since Joey is a gambler, he always uses it!
+          handleTimeWizard(timeWizardIndex)
+          await new Promise(r => setTimeout(r, 3000))
+        }
+      } catch (err) {
+        console.error("Error in aiActionSpells:", err)
+      } finally {
+        setTimeout(resolve, 500)
       }
-
-      // 6. Time Wizard Effect
-      const timeWizardIndex = aiFieldRef.current.monsters.findIndex(m => m && m.name.toLowerCase().includes('time wizard') && m.faceUp)
-      const pMonstersCount = playerFieldRef.current.monsters.filter(m => m !== null).length
-      
-      if (timeWizardIndex !== -1 && pMonstersCount > 0) {
-        console.log("AI deciding to use Time Wizard effect...")
-        // AI uses it if player has monsters. Since Joey is a gambler, he always uses it!
-        handleTimeWizard(timeWizardIndex)
-        await new Promise(r => setTimeout(r, 3000))
-      }
-
-      setTimeout(resolve, 500)
     })
   }
 
   const aiActionBattle = (aiLevel) => {
     return new Promise(async (resolve) => {
-      // Level 1: 50% chance to skip battle
-      if (aiLevel === 1 && Math.random() < 0.5) {
-        resolve()
-        return
-      }
+      try {
+        // Level 1: 50% chance to skip battle
+        if (aiLevel === 1 && Math.random() < 0.5) {
+          resolve()
+          return
+        }
 
-      // Check Swords of Revealing Light
-      if (swordsActive.active && swordsActive.owner === 'player') {
-        console.log("AI cannot attack due to Swords of Revealing Light")
-        setTimeout(resolve, 1000)
-        return
-      }
+        // Check Swords of Revealing Light
+        if (swordsActive.active && swordsActive.owner === 'player') {
+          console.log("AI cannot attack due to Swords of Revealing Light")
+          setTimeout(resolve, 1000)
+          return
+        }
 
-      setCurrentPhase('BATTLE')
-      
-      const aiMonsters = aiFieldRef.current.monsters
-        .map((m, i) => m ? { card: m, index: i } : null)
-        .filter(m => m !== null && m.card.position === 'attack')
-      
-      console.log(`AI Battle Phase: Found ${aiMonsters.length} monsters in attack position. Turn: ${duelTurnCount}`)
-
-      if (aiMonsters.length === 0 || duelTurnCount === 1) {
-        if (duelTurnCount === 1) console.log("AI cannot attack on Turn 1")
-        else console.log("AI has no monsters in attack position to attack with")
-        setTimeout(resolve, 1000)
-        return
-      }
-
-      // Sort AI attackers by ATK to maximize damage
-      const attackers = [...aiMonsters].sort((a, b) => b.card.atk - a.card.atk)
-
-      for (const attacker of attackers) {
-        // Re-check field (in case something happened during previous attack)
-        if (!aiFieldRef.current.monsters[attacker.index]) continue
-
-        const playerMonsters = playerFieldRef.current.monsters
-          .map((m, i) => m ? { card: m, index: i } : null)
-          .filter(m => m !== null)
-
-        console.log(`AI evaluating attack for ${attacker.card.name}`)
+        setCurrentPhase('BATTLE')
         
-        // Lethal check: If direct attack wins, do it
-        if (playerMonsters.length === 0) {
-           handleDirectAttack(attacker)
-           await new Promise(r => setTimeout(r, 2000))
-           continue
+        const aiMonsters = aiFieldRef.current.monsters
+          .map((m, i) => m ? { card: m, index: i } : null)
+          .filter(m => m !== null && m.card.position === 'attack')
+        
+        console.log(`AI Battle Phase: Found ${aiMonsters.length} monsters in attack position. Turn: ${duelTurnCount}`)
+
+        if (aiMonsters.length === 0 || duelTurnCount === 1) {
+          if (duelTurnCount === 1) console.log("AI cannot attack on Turn 1")
+          else console.log("AI has no monsters in attack position to attack with")
+          setTimeout(resolve, 1000)
+          return
         }
 
-        // Target selection
-        // 1. Can we destroy a monster and deal damage?
-        const beatableMonsters = playerMonsters.filter(p => {
-          if (p.card.faceUp) {
-            if (p.card.position === 'attack') return attacker.card.atk > p.card.atk
-            return attacker.card.atk > p.card.def
+        // Sort AI attackers by ATK to maximize damage
+        const attackers = [...aiMonsters].sort((a, b) => b.card.atk - a.card.atk)
+
+        for (const attacker of attackers) {
+          // Re-check field (in case something happened during previous attack)
+          if (!aiFieldRef.current.monsters[attacker.index]) continue
+
+          const playerMonsters = playerFieldRef.current.monsters
+            .map((m, i) => m ? { card: m, index: i } : null)
+            .filter(m => m !== null)
+
+          console.log(`AI evaluating attack for ${attacker.card.name}`)
+          
+          // Lethal check: If direct attack wins, do it
+          if (playerMonsters.length === 0) {
+            handleDirectAttack(attacker)
+            await new Promise(r => setTimeout(r, 2000))
+            continue
           }
-          return true // Risks of face-down, but AI plays aggressive in Hard Mode
-        }).sort((a, b) => {
-          // Prioritize attack position monsters to deal damage
-          if (a.card.position === 'attack' && b.card.position !== 'attack') return -1
-          if (a.card.position !== 'attack' && b.card.position === 'attack') return 1
-          return b.card.atk - a.card.atk 
-        })
 
-        if (beatableMonsters.length > 0) {
-          handleBattle(attacker, beatableMonsters[0])
-          await new Promise(r => setTimeout(r, 2500))
+          // Target selection
+          // 1. Can we destroy a monster and deal damage?
+          const beatableMonsters = playerMonsters.filter(p => {
+            if (p.card.faceUp) {
+              if (p.card.position === 'attack') return attacker.card.atk > p.card.atk
+              return attacker.card.atk > p.card.def
+            }
+            return true // Risks of face-down, but AI plays aggressive in Hard Mode
+          }).sort((a, b) => {
+            // Prioritize attack position monsters to deal damage
+            if (a.card.position === 'attack' && b.card.position !== 'attack') return -1
+            if (a.card.position !== 'attack' && b.card.position === 'attack') return 1
+            return b.card.atk - a.card.atk 
+          })
+
+          if (beatableMonsters.length > 0) {
+            handleBattle(attacker, beatableMonsters[0])
+            await new Promise(r => setTimeout(r, 2500))
+          }
         }
+        
+        setTimeout(() => {
+          setCurrentPhase('MAIN2')
+          resolve()
+        }, 2000)
+      } catch (err) {
+        console.error("Error in aiActionBattle:", err)
+        resolve() // Resolve in catch as well to ensure fallback
       }
-      
-      setTimeout(() => {
-        setCurrentPhase('MAIN2')
-        resolve()
-      }, 2000)
     })
   }
 

@@ -104,7 +104,7 @@ const yamiYugiDeck = {
       image_url: "https://images.ygoprodeck.com/images/cards/70781052.jpg"
     },
     {
-      id: 6368038,
+      id: "06368038",
       name: "Gaia The Fierce Knight",
       type: "Normal Monster",
       atk: 2300,
@@ -112,7 +112,7 @@ const yamiYugiDeck = {
       level: 7,
       race: "Warrior",
       attribute: "EARTH",
-      image_url: "https://images.ygoprodeck.com/images/cards/6368038.jpg"
+      image_url: "https://images.ygoprodeck.com/images/cards/06368038.jpg"
     },
     {
       id: 91152256,
@@ -126,7 +126,7 @@ const yamiYugiDeck = {
       image_url: "https://images.ygoprodeck.com/images/cards/91152256.jpg"
     },
     {
-      id: 10000010,
+      id: "10000020",
       name: "Slifer the Sky Dragon",
       type: "Effect Monster",
       desc: "Requires 3 Tributes to Normal Summon. Gains 1000 ATK/DEF for each card in your hand.",
@@ -135,7 +135,7 @@ const yamiYugiDeck = {
       level: 10,
       race: "Divine-Beast",
       attribute: "DIVINE",
-      image_url: "https://images.ygoprodeck.com/images/cards/10000010.jpg"
+      image_url: "https://images.ygoprodeck.com/images/cards/10000020.jpg"
     },
     {
       id: 83764718,
@@ -283,7 +283,7 @@ const maiDeck = {
 const pegasusDeck = {
   main: [
     {
-      id: 10000000,
+      id: "64631466",
       name: "Relinquished",
       type: "Ritual Monster",
       desc: "You can Ritual Summon this card with 'Black Illusion Ritual'.",
@@ -368,7 +368,7 @@ const bakuraDeck = {
 const marikDeck = {
   main: [
     {
-      id: 10000080,
+      id: "10000010",
       name: "The Winged Dragon of Ra",
       type: "Effect Monster",
       desc: "Cannot be Special Summoned.",
@@ -377,7 +377,7 @@ const marikDeck = {
       level: 10,
       race: "Divine-Beast",
       attribute: "DIVINE",
-      image_url: "https://images.ygoprodeck.com/images/cards/10000080.jpg"
+      image_url: "https://images.ygoprodeck.com/images/cards/10000010.jpg"
     },
     {
       id: 102380,
