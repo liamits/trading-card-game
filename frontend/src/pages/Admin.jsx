@@ -68,7 +68,7 @@ export default function Admin() {
             quill.insertEmbed(range.index, 'image', `http://localhost:5000${data.url}`)
           }
         }
-      } catch { setError('Upload ảnh thất bại') }
+      } catch { setError('Image upload failed') }
     }
     input.click()
   }
@@ -120,7 +120,7 @@ export default function Admin() {
     }))
     await fetchArticles()
     clearSelected()
-    showToast(publish ? `✅ Đã đăng ${ids.length} bài` : `🔒 Đã ẩn ${ids.length} bài`)
+    showToast(publish ? `✅ Published ${ids.length} article(s)` : `🔒 Hidden ${ids.length} article(s)`)
   }
 
   const handleBulkDelete = async () => {
@@ -129,7 +129,7 @@ export default function Admin() {
     await fetchArticles()
     clearSelected()
     setDeleteConfirm(null)
-    showToast(`🗑️ Đã xóa ${ids.length} bài`)
+    showToast(`🗑️ Deleted ${ids.length} article(s)`)
   }
 
   // Filters
@@ -177,7 +177,7 @@ export default function Admin() {
       const data = await res.json()
       setArticles(Array.isArray(data) ? data : [])
     } catch {
-      setError('Không thể kết nối server.')
+      setError('Could not connect to server.')
     } finally {
       setLoading(false)
     }
@@ -199,9 +199,9 @@ export default function Admin() {
       setShowForm(false)
       setEditingId(null)
       setForm(emptyArticle)
-      showToast(editingId ? '✅ Đã cập nhật bài viết' : '✅ Đã thêm bài viết mới')
+      showToast(editingId ? '✅ Article updated' : '✅ New article added')
     } catch {
-      setError('Lưu thất bại!')
+      setError('Save failed!')
     } finally {
       setSaving(false)
     }
@@ -219,8 +219,8 @@ export default function Admin() {
       await fetch(`${API_ARTICLES}/${id}`, { method: 'DELETE', headers: authHeaders })
       setArticles(articles.filter(a => a._id !== id))
       setDeleteConfirm(null)
-      showToast('🗑️ Đã xóa bài viết')
-    } catch { setError('Xóa thất bại!') }
+      showToast('🗑️ Article deleted')
+    } catch { setError('Delete failed!') }
   }
 
   const handleTogglePublish = async (a) => {
@@ -232,15 +232,15 @@ export default function Admin() {
       })
       const updated = await res.json()
       setArticles(articles.map(x => x._id === updated._id ? updated : x))
-      showToast(updated.published ? '✅ Đã đăng' : '🔒 Đã ẩn')
-    } catch { setError('Cập nhật thất bại!') }
+      showToast(updated.published ? '✅ Published' : '🔒 Hidden')
+    } catch { setError('Update failed!') }
   }
 
   // ── Categories ────────────────────────────────────────
   const saveCategories = (cats) => {
     setCategories(cats)
     localStorage.setItem('admin_categories', JSON.stringify(cats))
-    showToast('✅ Đã lưu danh mục')
+    showToast('✅ Categories saved')
   }
 
   const handleSubmitCat = () => {
@@ -254,7 +254,7 @@ export default function Admin() {
     } else {
       // Add - check duplicate
       if (categories.some(c => c.name === name)) {
-        setError('Danh mục đã tồn tại!')
+        setError('Category already exists!')
         return
       }
       saveCategories([...categories, { name, color: catForm.color }])
@@ -271,7 +271,7 @@ export default function Admin() {
   // ── Settings ──────────────────────────────────────────
   const handleSaveSettings = () => {
     localStorage.setItem('admin_settings', JSON.stringify(settings))
-    showToast('✅ Đã lưu cài đặt')
+    showToast('✅ Settings saved')
   }
 
   const [currentPage, setCurrentPage] = useState(1)
@@ -305,9 +305,9 @@ export default function Admin() {
 
         <nav className="admin-nav">
           {[
-            { key: 'articles', icon: '📰', label: 'Bài viết' },
-            { key: 'categories', icon: '🏷️', label: 'Danh mục' },
-            { key: 'settings', icon: '⚙️', label: 'Cài đặt' },
+            { key: 'articles', icon: '📰', label: 'Articles' },
+            { key: 'categories', icon: '🏷️', label: 'Categories' },
+            { key: 'settings', icon: '⚙️', label: 'Settings' },
           ].map(item => (
             <button
               key={item.key}
@@ -322,19 +322,19 @@ export default function Admin() {
 
         <div className="admin-stats">
           <div className="stat-row">
-            <span className="stat-label">Tổng bài</span>
+            <span className="stat-label">Total Articles</span>
             <span className="stat-num">{articles.length}</span>
           </div>
           <div className="stat-row">
-            <span className="stat-label">Đã đăng</span>
+            <span className="stat-label">Published</span>
             <span className="stat-num published">{articles.filter(a => a.published).length}</span>
           </div>
           <div className="stat-row">
-            <span className="stat-label">Đang ẩn</span>
+            <span className="stat-label">Hidden</span>
             <span className="stat-num hidden">{articles.filter(a => !a.published).length}</span>
           </div>
           <div className="stat-row">
-            <span className="stat-label">Danh mục</span>
+            <span className="stat-label">Categories</span>
             <span className="stat-num">{categories.length}</span>
           </div>
         </div>
@@ -344,7 +344,7 @@ export default function Admin() {
             <span className="admin-user-avatar">👤</span>
             <span className="admin-user-name">{username}</span>
           </div>
-          <button className="admin-logout-btn" onClick={handleLogout} title="Đăng xuất">
+          <button className="admin-logout-btn" onClick={handleLogout} title="Logout">
             ⏻
           </button>
         </div>
@@ -358,11 +358,11 @@ export default function Admin() {
           <>
             <div className="admin-header">
               <div>
-                <h1>📰 Bài viết</h1>
-                <p>{filtered.length} / {articles.length} bài viết</p>
+                <h1>📰 Articles</h1>
+                <p>{filtered.length} / {articles.length} articles</p>
               </div>
               <button className="btn-primary" onClick={() => { setForm(emptyArticle); setEditingId(null); setShowForm(true) }}>
-                + Thêm bài viết
+                + Add Article
               </button>
             </div>
 
@@ -373,7 +373,7 @@ export default function Admin() {
                   <span className="af-search-icon">🔍</span>
                   <input
                     className="af-input"
-                    placeholder="Tìm theo tiêu đề..."
+                    placeholder="Search by title..."
                     value={filterTitle}
                     onChange={e => setFilterTitle(e.target.value)}
                   />
@@ -381,13 +381,13 @@ export default function Admin() {
                 </div>
 
                 <select className="af-select" value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
-                  <option value="all">Tất cả trạng thái</option>
-                  <option value="published">✅ Đã đăng</option>
-                  <option value="hidden">🔒 Đang ẩn</option>
+                  <option value="all">All statuses</option>
+                  <option value="published">✅ Published</option>
+                  <option value="hidden">🔒 Hidden</option>
                 </select>
 
                 <select className="af-select" value={filterCat} onChange={e => setFilterCat(e.target.value)}>
-                  <option value="all">Tất cả danh mục</option>
+                  <option value="all">All categories</option>
                   {catNames.map(c => <option key={c} value={c}>{c}</option>)}
                 </select>
 
@@ -400,7 +400,7 @@ export default function Admin() {
                 </div>
 
                 {hasActiveFilter && (
-                  <button className="af-reset" onClick={resetFilters}>✕ Xóa filter</button>
+                  <button className="af-reset" onClick={resetFilters}>✕ Clear filters</button>
                 )}
               </div>
 
@@ -414,19 +414,19 @@ export default function Admin() {
             </div>
 
             {loading ? (
-              <div className="admin-loading"><div className="spinner" /><p>Đang tải...</p></div>
+              <div className="admin-loading"><div className="spinner" /><p>Loading...</p></div>
             ) : (
               <>
                 {/* Bulk action bar */}
                 {selected.size > 0 && (
                   <div className="bulk-bar">
-                    <span className="bulk-count">Đã chọn <strong>{selected.size}</strong> bài</span>
+                    <span className="bulk-count">Selected <strong>{selected.size}</strong> article(s)</span>
                     <div className="bulk-actions">
-                      <button className="bulk-btn publish" onClick={() => handleBulkPublish(true)}>✅ Đăng tất cả</button>
-                      <button className="bulk-btn hide" onClick={() => handleBulkPublish(false)}>🔒 Ẩn tất cả</button>
-                      <button className="bulk-btn delete" onClick={() => setDeleteConfirm('bulk')}>🗑️ Xóa tất cả</button>
+                      <button className="bulk-btn publish" onClick={() => handleBulkPublish(true)}>✅ Publish All</button>
+                      <button className="bulk-btn hide" onClick={() => handleBulkPublish(false)}>🔒 Hide All</button>
+                      <button className="bulk-btn delete" onClick={() => setDeleteConfirm('bulk')}>🗑️ Delete All</button>
                     </div>
-                    <button className="bulk-clear" onClick={clearSelected}>✕ Bỏ chọn</button>
+                    <button className="bulk-clear" onClick={clearSelected}>✕ Deselect</button>
                   </div>
                 )}
 
@@ -447,7 +447,7 @@ export default function Admin() {
                     </thead>
                     <tbody>
                       {paginated.length === 0
-                        ? <tr><td colSpan={8} className="empty-row">Chưa có bài viết nào</td></tr>
+                        ? <tr><td colSpan={8} className="empty-row">No articles found</td></tr>
                         : paginated.map(a => (
                           <tr key={a._id} className={selected.has(a._id) ? 'row-selected' : ''}>
                             <td>
@@ -470,14 +470,14 @@ export default function Admin() {
                             <td className="table-meta">{a.author}</td>
                             <td>
                               <button className={`status-btn ${a.published ? 'pub' : 'hid'}`} onClick={() => handleTogglePublish(a)}>
-                                {a.published ? '✅ Đã đăng' : '🔒 Ẩn'}
+                                {a.published ? '✅ Published' : '🔒 Hidden'}
                               </button>
                             </td>
-                            <td className="table-meta">{new Date(a.createdAt).toLocaleDateString('vi-VN')}</td>
+                            <td className="table-meta">{new Date(a.createdAt).toLocaleDateString('en-US')}</td>
                             <td>
                               <div className="action-btns">
-                                <button className="btn-icon edit" onClick={() => handleEdit(a)} title="Sửa">✏️</button>
-                                <button className="btn-icon del" onClick={() => setDeleteConfirm(a._id)} title="Xóa">🗑️</button>
+                                <button className="btn-icon edit" onClick={() => handleEdit(a)} title="Edit">✏️</button>
+                                <button className="btn-icon del" onClick={() => setDeleteConfirm(a._id)} title="Delete">🗑️</button>
                               </div>
                             </td>
                           </tr>
@@ -507,7 +507,7 @@ export default function Admin() {
                 }
                 <button className="page-btn" onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={safePage === totalPages}>›</button>
                 <button className="page-btn" onClick={() => setCurrentPage(totalPages)} disabled={safePage === totalPages}>»</button>
-                <span className="page-info">{safePage} / {totalPages} trang · {filtered.length} bài</span>
+                <span className="page-info">{safePage} / {totalPages} pages · {filtered.length} article(s)</span>
               </div>
             )}
           </>
@@ -518,11 +518,11 @@ export default function Admin() {
           <>
             <div className="admin-header">
               <div>
-                <h1>🏷️ Danh mục</h1>
-                <p>{categories.filter(c => c.name.toLowerCase().includes(catSearch.toLowerCase())).length} / {categories.length} danh mục</p>
+                <h1>🏷️ Categories</h1>
+                <p>{categories.filter(c => c.name.toLowerCase().includes(catSearch.toLowerCase())).length} / {categories.length} categories</p>
               </div>
               <button className="btn-primary" onClick={() => { setCatForm({ name: '', color: '#8ab4f8' }); setCatEditId(null); setShowCatModal(true) }}>
-                + Thêm danh mục
+                + Add Category
               </button>
             </div>
 
@@ -570,27 +570,27 @@ export default function Admin() {
           <>
             <div className="admin-header">
               <div>
-                <h1>⚙️ Cài đặt</h1>
-                <p>Cấu hình chung của website</p>
+                <h1>⚙️ Settings</h1>
+                <p>General website configuration</p>
               </div>
-              <button className="btn-primary" onClick={handleSaveSettings}>💾 Lưu cài đặt</button>
+              <button className="btn-primary" onClick={handleSaveSettings}>💾 Save Settings</button>
             </div>
 
             <div className="settings-sections">
               <div className="settings-card">
-                <h3>🌐 Thông tin website</h3>
+                <h3>🌐 Website Information</h3>
                 <div className="settings-group">
-                  <label>Tên website</label>
+                  <label>Website Name</label>
                   <input className="admin-input" value={settings.siteName}
                     onChange={e => setSettings({ ...settings, siteName: e.target.value })} />
                 </div>
                 <div className="settings-group">
-                  <label>Mô tả website</label>
+                  <label>Website Description</label>
                   <textarea className="admin-textarea" value={settings.siteDesc}
                     onChange={e => setSettings({ ...settings, siteDesc: e.target.value })} rows={3} />
                 </div>
                 <div className="settings-group">
-                  <label>Số bài viết mỗi trang</label>
+                  <label>Articles per page</label>
                   <input className="admin-input small-input" type="number" min={1} max={50}
                     value={settings.articlesPerPage}
                     onChange={e => setSettings({ ...settings, articlesPerPage: parseInt(e.target.value) })} />
@@ -598,11 +598,11 @@ export default function Admin() {
               </div>
 
               <div className="settings-card">
-                <h3>🔧 Tính năng</h3>
+                <h3>🔧 Features</h3>
                 <div className="settings-toggle-row">
                   <div>
-                    <div className="toggle-title">Chế độ bảo trì</div>
-                    <div className="toggle-desc">Ẩn website với người dùng thông thường</div>
+                    <div className="toggle-title">Maintenance Mode</div>
+                    <div className="toggle-desc">Hide website from regular users</div>
                   </div>
                   <label className="toggle-switch">
                     <input type="checkbox" checked={settings.maintenanceMode}
@@ -612,8 +612,8 @@ export default function Admin() {
                 </div>
                 <div className="settings-toggle-row">
                   <div>
-                    <div className="toggle-title">Cho phép bình luận</div>
-                    <div className="toggle-desc">Hiển thị phần bình luận dưới bài viết</div>
+                    <div className="toggle-title">Allow Comments</div>
+                    <div className="toggle-desc">Show comments section below articles</div>
                   </div>
                   <label className="toggle-switch">
                     <input type="checkbox" checked={settings.allowComments}
@@ -624,13 +624,13 @@ export default function Admin() {
               </div>
 
               <div className="settings-card danger-card">
-                <h3>⚠️ Vùng nguy hiểm</h3>
+                <h3>⚠️ Danger Zone</h3>
                 <div className="danger-row">
                   <div>
-                    <div className="toggle-title">Xóa tất cả bài viết</div>
-                    <div className="toggle-desc">Hành động này không thể hoàn tác</div>
+                    <div className="toggle-title">Delete all articles</div>
+                    <div className="toggle-desc">This action cannot be undone</div>
                   </div>
-                  <button className="btn-danger" onClick={() => setDeleteConfirm('all')}>Xóa tất cả</button>
+                  <button className="btn-danger" onClick={() => setDeleteConfirm('all')}>Delete All</button>
                 </div>
               </div>
             </div>
@@ -648,38 +648,38 @@ export default function Admin() {
             </div>
             <form onSubmit={handleSubmitArticle} className="article-form">
               <div className="form-group">
-                <label>Tiêu đề *</label>
+                <label>Title *</label>
                 <input className="admin-input" value={form.title}
                   onChange={e => setForm({ ...form, title: e.target.value })}
-                  placeholder="Nhập tiêu đề..." required />
+                  placeholder="Enter title..." required />
               </div>
 
               <div className="form-row-2">
                 <div className="form-group">
-                  <label>Danh mục *</label>
+                  <label>Category *</label>
                   <select className="admin-input" value={form.category}
                     onChange={e => setForm({ ...form, category: e.target.value })}>
                     {catNames.map(c => <option key={c} value={c}>{c}</option>)}
                   </select>
                 </div>
                 <div className="form-group">
-                  <label>Tác giả</label>
+                  <label>Author</label>
                   <input className="admin-input" value={form.author}
                     onChange={e => setForm({ ...form, author: e.target.value })} />
                 </div>
               </div>
 
               <div className="form-group">
-                <label>Mô tả ngắn *</label>
+                <label>Short Description *</label>
                 <input className="admin-input" value={form.desc}
                   onChange={e => setForm({ ...form, desc: e.target.value })}
-                  placeholder="Hiển thị trên trang chủ..." required />
+                  placeholder="Shown on home page..." required />
               </div>
 
               <div className="form-group">
-                <label>Nội dung</label>
+                <label>Content</label>
                 <div className="quill-wrapper">
-                  <Suspense fallback={<div className="admin-textarea" style={{minHeight:200, display:'flex', alignItems:'center', justifyContent:'center', color:'#484f58'}}>Đang tải editor...</div>}>
+                  <Suspense fallback={<div className="admin-textarea" style={{minHeight:200, display:'flex', alignItems:'center', justifyContent:'center', color:'#484f58'}}>Loading editor...</div>}>
                     <ReactQuill
                       ref={quillRef}
                       theme="snow"
@@ -687,7 +687,7 @@ export default function Admin() {
                       onChange={val => setForm({ ...form, content: val })}
                       modules={quillModulesRef.current}
                       formats={quillFormats}
-                      placeholder="Nội dung chi tiết..."
+                      placeholder="Detailed content..."
                     />
                   </Suspense>
                 </div>
@@ -695,7 +695,7 @@ export default function Admin() {
 
               <div className="form-row-2">
                 <div className="form-group">
-                  <label>Ảnh đại diện</label>
+                  <label>Cover Image</label>
                   <div className="upload-area">
                     <input
                       type="file"
@@ -720,14 +720,14 @@ export default function Admin() {
                       }}
                     />
                     <label htmlFor="img-upload" className="upload-btn">
-                      📁 Chọn ảnh từ máy
+                      📁 Choose from computer
                     </label>
-                    <span className="upload-hint">JPG, PNG, WEBP · Tối đa 5MB</span>
+                    <span className="upload-hint">JPG, PNG, WEBP · Max 5MB</span>
                   </div>
                   {form.image && <img src={form.image} alt="" className="img-preview" />}
                 </div>
                 <div className="form-group">
-                  <label>Màu accent</label>
+                  <label>Accent Color</label>
                   <div className="color-row">
                     {COLORS.map(c => (
                       <div key={c} className={`color-dot ${form.color === c ? 'sel' : ''}`}
@@ -737,15 +737,15 @@ export default function Admin() {
                   <label className="check-label">
                     <input type="checkbox" checked={form.published}
                       onChange={e => setForm({ ...form, published: e.target.checked })} />
-                    Đăng công khai
+                    Publicly published
                   </label>
                 </div>
               </div>
 
               <div className="form-actions">
-                <button type="button" className="btn-ghost" onClick={() => setShowForm(false)}>Hủy</button>
+                <button type="button" className="btn-ghost" onClick={() => setShowForm(false)}>Cancel</button>
                 <button type="submit" className="btn-primary" disabled={saving}>
-                  {saving ? 'Đang lưu...' : editingId ? 'Cập nhật' : 'Thêm bài viết'}
+                  {saving ? 'Saving...' : editingId ? 'Update' : 'Add Article'}
                 </button>
               </div>
             </form>
@@ -758,24 +758,24 @@ export default function Admin() {
         <div className="modal-bg" onClick={() => setShowCatModal(false)}>
           <div className="admin-modal cat-modal" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
-              <h2>{catEditId !== null ? '✏️ Sửa danh mục' : '+ Thêm danh mục mới'}</h2>
+              <h2>{catEditId !== null ? '✏️ Edit Category' : '+ Add New Category'}</h2>
               <button className="modal-close" onClick={() => setShowCatModal(false)}>✕</button>
             </div>
             <div className="cat-modal-body">
               <div className="form-group">
-                <label>Tên danh mục *</label>
+                <label>Category Name *</label>
                 <input
                   className="admin-input"
                   value={catForm.name}
                   onChange={e => setCatForm({ ...catForm, name: e.target.value })}
-                  placeholder="VD: TIER LIST, TOP DECKS..."
+                  placeholder="e.g. TIER LIST, TOP DECKS..."
                   autoFocus
                   onKeyDown={e => e.key === 'Enter' && handleSubmitCat()}
                 />
-                <span className="cat-input-hint">Tên sẽ được tự động viết hoa</span>
+                <span className="cat-input-hint">Name will be automatically capitalized</span>
               </div>
               <div className="form-group">
-                <label>Màu sắc</label>
+                <label>Color</label>
                 <div className="color-row">
                   {COLORS.map(c => (
                     <div key={c} className={`color-dot ${catForm.color === c ? 'sel' : ''}`}
@@ -789,9 +789,9 @@ export default function Admin() {
                 </div>
               </div>
               <div className="form-actions">
-                <button className="btn-ghost" onClick={() => setShowCatModal(false)}>Hủy</button>
+                <button className="btn-ghost" onClick={() => setShowCatModal(false)}>Cancel</button>
                 <button className="btn-primary" onClick={handleSubmitCat} disabled={!catForm.name.trim()}>
-                  {catEditId !== null ? 'Cập nhật' : 'Thêm danh mục'}
+                  {catEditId !== null ? 'Update' : 'Add Category'}
                 </button>
               </div>
             </div>
@@ -803,26 +803,26 @@ export default function Admin() {
       {deleteConfirm && (
         <div className="modal-bg" onClick={() => setDeleteConfirm(null)}>
           <div className="confirm-modal" onClick={e => e.stopPropagation()}>
-            <h3>⚠️ Xác nhận xóa</h3>
+            <h3>⚠️ Confirm Delete</h3>
             <p>
               {deleteConfirm === 'all'
-                ? 'Xóa toàn bộ bài viết? Không thể hoàn tác.'
+                ? 'Delete all articles? This cannot be undone.'
                 : deleteConfirm === 'bulk'
-                ? `Xóa ${selected.size} bài viết đã chọn? Không thể hoàn tác.`
-                : 'Xóa bài viết này? Không thể hoàn tác.'}
+                ? `Delete ${selected.size} selected article(s)? This cannot be undone.`
+                : 'Delete this article? This cannot be undone.'}
             </p>
             <div className="confirm-actions">
-              <button className="btn-ghost" onClick={() => setDeleteConfirm(null)}>Hủy</button>
+              <button className="btn-ghost" onClick={() => setDeleteConfirm(null)}>Cancel</button>
               <button className="btn-danger" onClick={() => {
                 if (deleteConfirm === 'all') {
                   articles.forEach(a => fetch(`${API_ARTICLES}/${a._id}`, { method: 'DELETE' }))
-                  setArticles([]); setDeleteConfirm(null); showToast('🗑️ Đã xóa tất cả')
+                  setArticles([]); setDeleteConfirm(null); showToast('🗑️ All articles deleted')
                 } else if (deleteConfirm === 'bulk') {
                   handleBulkDelete()
                 } else {
                   handleDelete(deleteConfirm)
                 }
-              }}>Xóa</button>
+              }}>Delete</button>
             </div>
           </div>
         </div>

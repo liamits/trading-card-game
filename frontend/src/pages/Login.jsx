@@ -24,7 +24,7 @@ export default function Login() {
       localStorage.setItem('admin_user', data.username)
       navigate('/admin')
     } catch {
-      setError('Không thể kết nối server')
+      setError('Cannot connect to server.')
     } finally {
       setLoading(false)
     }
@@ -38,8 +38,8 @@ export default function Login() {
           <span className="l-sub">ADMIN</span>
         </div>
 
-        <h2>Đăng nhập</h2>
-        <p className="login-hint">Chỉ dành cho quản trị viên</p>
+        <h2>Login</h2>
+        <p className="login-hint">Authorized access only</p>
 
         {error && <div className="login-error">{error}</div>}
 
@@ -66,11 +66,11 @@ export default function Login() {
             />
           </div>
           <button type="submit" className="login-btn" disabled={loading}>
-            {loading ? 'Đang đăng nhập...' : 'Đăng nhập'}
+            {loading ? 'Logging in...' : 'Login'}
           </button>
         </form>
 
-        <button className="login-back" onClick={() => navigate('/')}>← Về trang chủ</button>
+        <button className="login-back" onClick={() => navigate('/')}>← Back home</button>
       </div>
     </div>
   )

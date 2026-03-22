@@ -39,7 +39,7 @@ function ShareBar({ title }) {
 
   return (
     <div className="share-bar">
-      <span className="share-label">Chia sẻ:</span>
+      <span className="share-label">Share:</span>
       {shareButtons.map(btn => (
         <button key={btn.label} className="share-btn" style={{ '--share-color': btn.color }} onClick={btn.onClick} title={btn.label}>
           {btn.icon}
@@ -57,7 +57,7 @@ function ShareBar({ title }) {
             <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
           </svg>
         )}
-        <span>{copied ? 'Đã copy!' : 'Copy link'}</span>
+        <span>{copied ? 'Copied!' : 'Copy link'}</span>
       </button>
     </div>
   )
@@ -100,7 +100,7 @@ export default function Article() {
       </nav>
       <div className="art-loading">
         <div className="art-spinner" />
-        <p>Đang tải bài viết...</p>
+        <p>Loading article...</p>
       </div>
     </div>
   )
@@ -114,8 +114,8 @@ export default function Article() {
         </div>
       </nav>
       <div className="art-loading">
-        <p>Không tìm thấy bài viết.</p>
-        <button className="art-back-btn" onClick={() => navigate('/')}>← Về trang chủ</button>
+        <p>Article not found.</p>
+        <button className="art-back-btn" onClick={() => navigate('/')}>← Back home</button>
       </div>
     </div>
   )
@@ -131,16 +131,16 @@ export default function Article() {
           <span className="art-logo-meta">META</span>
         </div>
         <div className="art-nav-links">
-          <button className="art-nav-link" onClick={() => navigate('/')}>🏠 Trang chủ</button>
-          <button className="art-nav-link" onClick={() => navigate('/cards')}>🔍 Tìm bài</button>
-          <button className="art-nav-link" onClick={() => navigate('/game')}>⚔️ Chơi ngay</button>
+          <button className="art-nav-link" onClick={() => navigate('/')}>🏠 Home</button>
+          <button className="art-nav-link" onClick={() => navigate('/cards')}>🔍 Search Cards</button>
+          <button className="art-nav-link" onClick={() => navigate('/game')}>⚔️ Play Now</button>
         </div>
       </nav>
 
       <div className="art-container">
         {/* Breadcrumb */}
         <div className="art-breadcrumb">
-          <span onClick={() => navigate('/')}>Trang chủ</span>
+          <span onClick={() => navigate('/')}>Home</span>
           <span className="sep">›</span>
           <span onClick={() => navigate('/')}>{article.category}</span>
           <span className="sep">›</span>
@@ -158,7 +158,7 @@ export default function Article() {
               <h1>{article.title}</h1>
               <div className="art-meta">
                 <span>✍️ {article.author || 'Admin'}</span>
-                <span>🕐 {new Date(article.createdAt).toLocaleDateString('vi-VN', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                <span>🕐 {new Date(article.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
               </div>
             </div>
 
@@ -180,7 +180,7 @@ export default function Article() {
               />
             ) : (
               <div className="art-no-content">
-                <p>Nội dung chi tiết đang được cập nhật...</p>
+                <p>Detailed content is being updated...</p>
               </div>
             )}
 
@@ -191,10 +191,10 @@ export default function Article() {
           {/* Sidebar */}
           <aside className="art-sidebar">
             <div className="art-sidebar-card">
-              <h3>📰 Bài viết liên quan</h3>
+              <h3>📰 Related Articles</h3>
               <div className="art-related">
                 {related.length === 0 ? (
-                  <p className="no-related">Chưa có bài viết liên quan</p>
+                  <p className="no-related">No related articles found</p>
                 ) : related.map(a => (
                   <div key={a._id} className="related-item" onClick={() => navigate(`/article/${a.slug || a._id}`)}>
                     <img src={a.image} alt={a.title} />
@@ -208,9 +208,9 @@ export default function Article() {
             </div>
 
             <div className="art-sidebar-card">
-              <h3>⚔️ Chơi ngay</h3>
-              <p style={{ color: '#8b949e', fontSize: '13px', marginBottom: '12px' }}>Thử sức với các nhân vật trong game!</p>
-              <button className="art-play-btn" onClick={() => navigate('/game')}>Bắt đầu đấu</button>
+              <h3>⚔️ Play Now</h3>
+              <p style={{ color: '#8b949e', fontSize: '13px', marginBottom: '12px' }}>Try your skills with the game characters!</p>
+              <button className="art-play-btn" onClick={() => navigate('/game')}>Start Duel</button>
             </div>
           </aside>
         </div>

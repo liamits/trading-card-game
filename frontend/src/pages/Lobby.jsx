@@ -39,7 +39,7 @@ function Lobby() {
 
     socket.on('room-closed', () => {
       setCurrentRoom(null)
-      alert('Chủ phòng đã thoát, phòng đã đóng!')
+      alert('Host has left, room closed!')
     })
 
     socket.on('duel-loading', (room) => {
@@ -67,7 +67,7 @@ function Lobby() {
 
   const handleJoinRoom = () => {
     if (!roomId.trim()) {
-      setError('Vui lòng nhập ID phòng!')
+      setError('Please enter room ID!')
       return
     }
     setIsJoining(true)
@@ -76,7 +76,7 @@ function Lobby() {
 
   const handleStartGame = () => {
     if (currentRoom.players.length < 2) {
-      alert('Cần ít nhất 2 người để bắt đầu!')
+      alert('At least 2 players are required to start!')
       return
     }
     socket.emit('start-game', { roomId: currentRoom.id, userData: user })
@@ -89,7 +89,7 @@ function Lobby() {
   return (
     <div className="lobby-container">
       <div className="lobby-box">
-        <h1 className="lobby-title">SẢNH CHỜ QUYẾT ĐẤU</h1>
+        <h1 className="lobby-title">DUEL LOBBY</h1>
         
         {!currentRoom ? (
           <div className="lobby-actions">
@@ -99,24 +99,24 @@ function Lobby() {
                 type="text" 
                 value={user.name} 
                 onChange={(e) => setUser({...user, name: e.target.value})}
-                placeholder="Nhập tên của bạn..."
+                placeholder="Enter your name..."
               />
             </div>
 
             <div className="action-group">
               <button className="lobby-btn create" onClick={handleCreateRoom}>
-                ➕ TẠO PHÒNG MỚI
+                ➕ CREATE NEW ROOM
               </button>
               
               <div className="join-group">
                 <input 
                   type="text" 
-                  placeholder="Nhập ID phòng (6 số)..." 
+                  placeholder="Enter Room ID (6 digits)..." 
                   value={roomId}
                   onChange={(e) => setRoomId(e.target.value)}
                 />
                 <button className="lobby-btn join" onClick={handleJoinRoom} disabled={isJoining}>
-                  {isJoining ? 'ĐANG VÀO...' : 'VÀO PHÒNG'}
+                  {isJoining ? 'JOINING...' : 'JOIN ROOM'}
                 </button>
               </div>
             </div>
@@ -125,8 +125,8 @@ function Lobby() {
         ) : (
           <div className="room-details">
             <div className="room-info">
-              <h2>PHÒNG: <span className="room-id">{currentRoom.id}</span></h2>
-              <p className="room-status">Chờ đối thủ... ({currentRoom.players.length}/2)</p>
+              <h2>ROOM: <span className="room-id">{currentRoom.id}</span></h2>
+              <p className="room-status">Waiting for opponent... ({currentRoom.players.length}/2)</p>
             </div>
 
             <div className="players-list">
@@ -141,7 +141,7 @@ function Lobby() {
               {currentRoom.players.length < 2 && (
                 <div className="player-slot empty">
                   <div className="pulse-dot"></div>
-                  <span>Đang đợi người chơi khác...</span>
+                  <span>Waiting for another player...</span>
                 </div>
               )}
             </div>
@@ -153,20 +153,20 @@ function Lobby() {
                   onClick={handleStartGame}
                   disabled={currentRoom.players.length < 2}
                 >
-                  ⚔️ BẮT ĐẦU QUYẾT ĐẤU
+                  ⚔️ START DUEL
                 </button>
               ) : (
-                <p className="waiting-msg">Đang chờ chủ phòng bắt đầu...</p>
+                <p className="waiting-msg">Waiting for host to start...</p>
               )}
               <button className="lobby-btn leave" onClick={handleLeaveRoom}>
-                🚪 THOÁT PHÒNG
+                🚪 LEAVE ROOM
               </button>
             </div>
           </div>
         )}
 
         <div className="lobby-footer">
-          <p>Chia sẻ ID phòng cho bạn bè để cùng quyết đấu!</p>
+          <p>Share the room ID with your friends to duel together!</p>
         </div>
       </div>
     </div>

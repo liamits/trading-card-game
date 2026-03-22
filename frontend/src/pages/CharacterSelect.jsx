@@ -85,7 +85,7 @@ function CharacterSelect() {
     const isLocked = character.unlockLevel > userLevel
     
     if (isLocked && selectingFor === 'player') {
-      alert(`Nhân vật này yêu cầu Level ${character.unlockLevel} để mở khóa!`)
+      alert(`This character requires Level ${character.unlockLevel} to unlock!`)
       return
     }
 

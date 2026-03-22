@@ -3922,8 +3922,8 @@ function Duel() {
       {showCoinToss && (
         <div className="coin-toss-modal">
           <div className="coin-toss-content">
-            <h2>🪙 Tung Đồng Xu</h2>
-            <p>Chọn mặt để quyết định ai đi trước!</p>
+            <h2>🪙 Coin Toss</h2>
+            <p>Choose a side to decide who goes first!</p>
 
             {!playerChoice && (
               <div className="coin-choices">
@@ -3932,14 +3932,14 @@ function Duel() {
                   onClick={() => handleCoinChoice('heads')}
                 >
                   <div className="coin-face">👑</div>
-                  <span>Ngửa</span>
+                  <span>Heads</span>
                 </button>
                 <button 
                   className="coin-choice-btn tails"
                   onClick={() => handleCoinChoice('tails')}
                 >
                   <div className="coin-face">⚔️</div>
-                  <span>Sấp</span>
+                  <span>Tails</span>
                 </button>
               </div>
             )}
@@ -3947,7 +3947,7 @@ function Duel() {
             {coinFlipping && (
               <div className="coin-flipping">
                 <div className="coin-animation">🪙</div>
-                <p>Đang tung...</p>
+                <p>Flipping...</p>
               </div>
             )}
 
@@ -3957,13 +3957,13 @@ function Duel() {
                   {coinResult === 'heads' ? '👑' : '⚔️'}
                 </div>
                 <p className="result-text">
-                  Kết quả: <strong>{coinResult === 'heads' ? 'Ngửa' : 'Sấp'}</strong>
+                  Result: <strong>{coinResult === 'heads' ? 'Heads' : 'Tails'}</strong>
                 </p>
                 {((playerChoice === 'heads' && coinResult === 'heads') || 
                   (playerChoice === 'tails' && coinResult === 'tails')) ? (
-                  <p className="winner-text">🎉 Bạn đi trước!</p>
+                  <p className="winner-text">🎉 You go first!</p>
                 ) : (
-                  <p className="winner-text">😤 Đối thủ đi trước!</p>
+                  <p className="winner-text">😤 Opponent goes first!</p>
                 )}
               </div>
             )}
@@ -3977,7 +3977,7 @@ function Duel() {
         <div className="discard-modal" onClick={handleCancelGraveyardSelection}>
           <div className="discard-content" onClick={(e) => e.stopPropagation()}>
             <div className="discard-header">
-              <h2>Nghĩa Địa</h2>
+              <h2>Graveyard</h2>
               <p className="discard-instruction">{graveyardSelection.message}</p>
             </div>
             <div className="discard-cards-grid">
@@ -3997,7 +3997,7 @@ function Duel() {
                 className="discard-btn"
                 onClick={handleCancelGraveyardSelection}
               >
-                Hủy bỏ
+                Cancel
               </button>
             </div>
           </div>
@@ -4009,7 +4009,7 @@ function Duel() {
         <div className="discard-modal" onClick={() => setDeckSelection({ ...deckSelection, active: false })}>
           <div className="discard-content" onClick={(e) => e.stopPropagation()}>
             <div className="discard-header">
-              <h2>Bộ Bài (Deck)</h2>
+              <h2>Deck</h2>
               <p className="discard-instruction">{deckSelection.message}</p>
             </div>
             <div className="discard-cards-grid">
@@ -4029,7 +4029,7 @@ function Duel() {
                 className="discard-btn"
                 onClick={() => setDeckSelection({ ...deckSelection, active: false })}
               >
-                Hủy bỏ
+                Cancel
               </button>
             </div>
           </div>
@@ -4041,13 +4041,13 @@ function Duel() {
         <div className="target-selection-overlay">
           <div className="target-selection-content">
             <div className="target-selection-pulse"></div>
-            <h3>🎯 Chọn mục tiêu</h3>
+            <h3>🎯 Select Target</h3>
             <p>{targetSelection.message}</p>
             <button 
               className="target-cancel-btn"
               onClick={handleCancelTargetSelection}
             >
-              Hủy chọn
+              Cancel
             </button>
           </div>
         </div>
@@ -4405,19 +4405,19 @@ function Duel() {
       {showCardOptions && (
         <div className="card-options-modal">
           <div className="card-options-content">
-            <h3>Chọn cách đặt bài</h3>
+            <h3>Card Placement Options</h3>
             <div className="options-buttons">
               <button 
                 className="option-btn face-up"
                 onClick={() => handleCardPlacement(true)}
               >
-                {selectedZone?.type === 'monster' ? '⚔️ Triệu hồi (Ngửa)' : '✨ Kích hoạt (Ngửa)'}
+                {selectedZone?.type === 'monster' ? '⚔️ Summon (Attack)' : '✨ Activate (Face-up)'}
               </button>
               <button 
                 className="option-btn face-down"
                 onClick={() => handleCardPlacement(false)}
               >
-                🎴 Đặt úp (Sấp)
+                🎴 Set (Face-down)
               </button>
               <button 
                 className="option-btn cancel"
@@ -4427,7 +4427,7 @@ function Duel() {
                   setSelectedZone(null)
                 }}
               >
-                ❌ Hủy
+                ❌ Cancel
               </button>
             </div>
           </div>
@@ -4453,19 +4453,19 @@ function Duel() {
                         className="summon-option-btn normal"
                         onClick={() => handleSummonOption('normal')}
                       >
-                        ⚔️ Triệu hồi thường (Tấn công)
+                        ⚔️ Normal Summon (Attack)
                       </button>
                       <button 
                         className="summon-option-btn defense"
                         onClick={() => handleSummonOption('defense')}
                       >
-                        🛡️ Triệu hồi thường (Phòng thủ)
+                        🛡️ Normal Summon (Defense)
                       </button>
                       <button 
                         className="summon-option-btn set"
                         onClick={() => handleSummonOption('set')}
                       >
-                        🎴 Úp bài (Thế thủ)
+                        🎴 Set (Defense)
                       </button>
                     </>
                   )}
@@ -4474,7 +4474,7 @@ function Duel() {
                       className="summon-option-btn tribute"
                       onClick={() => handleSummonOption('tribute')}
                     >
-                      🔥 Triệu hồi hiến tế
+                      🔥 Tribute Summon
                     </button>
                   )}
                 </>
@@ -4489,14 +4489,14 @@ function Duel() {
                         setSelectingZone(true)
                       }}
                     >
-                      ✨ Kích hoạt
+                      ✨ Activate
                     </button>
                   )}
                   <button 
                     className="summon-option-btn set"
                     onClick={() => handleSummonOption('set')}
                   >
-                    🎴 Úp bài
+                    🎴 Set
                   </button>
                 </>
               )}
@@ -4504,7 +4504,7 @@ function Duel() {
                 className="summon-option-btn cancel"
                 onClick={() => setSelectedHandCard(null)}
               >
-                ❌ Hủy
+                ❌ Cancel
               </button>
             </div>
           </div>
@@ -4530,7 +4530,7 @@ function Duel() {
             </div>
             
             <div className="tribute-selection-status">
-              <p>Đã chọn: {selectedTributes.length} / {tributeCard.tributesNeeded}</p>
+              <p>Selected: {selectedTributes.length} / {tributeCard.tributesNeeded}</p>
             </div>
 
             <div className="tribute-monsters-grid">
@@ -4563,7 +4563,7 @@ function Duel() {
                 className="tribute-btn cancel"
                 onClick={handleCancelTribute}
               >
-                ❌ Hủy
+                ❌ Cancel
               </button>
             </div>
           </div>
@@ -4591,7 +4591,7 @@ function Duel() {
                   setContextMenu(null)
                 }}
               >
-                🪄 Kích hoạt Hiệu ứng
+                🪄 Activate Effect
               </button>
             )}
             
@@ -4613,7 +4613,7 @@ function Duel() {
                       setContextMenu(null)
                     }}
                   >
-                    {contextMenu.card.position === 'attack' ? '🛡️ Chuyển sang Thế Thủ' : '⚔️ Chuyển sang Tấn Công'}
+                    {contextMenu.card.position === 'attack' ? '🛡️ Change to Defense Position' : '⚔️ Change to Attack Position'}
                   </button>
                 ) : (
                   // Flip Summon option for Face-down monsters
@@ -4634,7 +4634,7 @@ function Duel() {
                       alert(`Flip Summon: ${flippedCard.name}!`)
                     }}
                   >
-                    ⚔️ Lật Bài (Flip Summon)
+                    ⚔️ Flip Summon
                   </button>
                 )}
               </>
@@ -4648,7 +4648,7 @@ function Duel() {
                     className="context-menu-item disabled"
                     disabled
                   >
-                    ⚠️ Trap chưa thể kích hoạt (phải đợi turn sau)
+                    ⚠️ Trap cannot be activated (must wait until next turn)
                   </button>
                 ) : (
                   <button 
@@ -4658,7 +4658,7 @@ function Duel() {
                       setContextMenu(null)
                     }}
                   >
-                    ✨ Kích hoạt
+                    ✨ Activate
                   </button>
                 )}
               </>
@@ -4758,20 +4758,20 @@ function Duel() {
                     <span className="stat-label">ATK:</span>
                     <span className={`stat-value ${hoveredCard.buffType || ''}`}>{hoveredCard.atk}</span>
                     {hoveredCard.originalAtk !== undefined && hoveredCard.atk !== hoveredCard.originalAtk && (
-                      <span className="original-stat"> (Gốc: {hoveredCard.originalAtk})</span>
+                      <span className="original-stat"> (Original: {hoveredCard.originalAtk})</span>
                     )}
                   </div>
                   <div className="stat-group">
                     <span className="stat-label">DEF:</span>
                     <span className="stat-value">{hoveredCard.def}</span>
                     {hoveredCard.originalDef !== undefined && hoveredCard.def !== hoveredCard.originalDef && (
-                      <span className="original-stat"> (Gốc: {hoveredCard.originalDef})</span>
+                      <span className="original-stat"> (Original: {hoveredCard.originalDef})</span>
                     )}
                   </div>
                 </div>
               )}
               <div className="card-description">
-                <p className="description-label">Hiệu ứng:</p>
+                <p className="description-label">Effect:</p>
                 <p>{hoveredCard.desc}</p>
               </div>
             </div>
@@ -4800,16 +4800,16 @@ function Duel() {
         <div className="discard-modal">
           <div className="discard-content">
             <div className="discard-header">
-              <h2>⚠️ {forcedDiscard ? 'Hiệu ứng Spell' : 'Giới hạn bài trên tay'}</h2>
+              <h2>⚠️ {forcedDiscard ? 'Spell Effect' : 'Hand Size Limit'}</h2>
               {forcedDiscard ? (
                 <>
-                  <p>Hiệu ứng spell yêu cầu loại bỏ {forcedDiscard.amount} lá bài</p>
-                  <p className="discard-instruction">Chọn {forcedDiscard.amount} lá để loại bỏ vào Graveyard</p>
+                  <p>A spell effect requires you to discard {forcedDiscard.amount} card(s)</p>
+                  <p className="discard-instruction">Choose {forcedDiscard.amount} card(s) to send to the Graveyard</p>
                 </>
               ) : (
                 <>
-                  <p>Bạn có {(currentTurn === 'player' ? playerHand : aiHand).length} lá bài. Giới hạn là {handLimit} lá.</p>
-                  <p className="discard-instruction">Chọn {(currentTurn === 'player' ? playerHand : aiHand).length - handLimit} lá để loại bỏ vào Graveyard</p>
+                  <p>You have {(currentTurn === 'player' ? playerHand : aiHand).length} cards. The limit is {handLimit}.</p>
+                  <p className="discard-instruction">Choose {(currentTurn === 'player' ? playerHand : aiHand).length - handLimit} card(s) to send to the Graveyard</p>
                 </>
               )}
             </div>
@@ -4829,7 +4829,7 @@ function Duel() {
             </div>
 
             <div className="discard-status">
-              <p>Đã chọn: {selectedDiscards.length} / {forcedDiscard ? forcedDiscard.amount : ((currentTurn === 'player' ? playerHand : aiHand).length - handLimit)}</p>
+              <p>Selected: {selectedDiscards.length} / {forcedDiscard ? forcedDiscard.amount : ((currentTurn === 'player' ? playerHand : aiHand).length - handLimit)}</p>
             </div>
 
             <div className="discard-buttons">
@@ -4838,7 +4838,7 @@ function Duel() {
                 onClick={handleConfirmDiscard}
                 disabled={selectedDiscards.length !== (forcedDiscard ? forcedDiscard.amount : ((currentTurn === 'player' ? playerHand : aiHand).length - handLimit))}
               >
-                ✓ Xác nhận loại bỏ
+                ✓ Confirm Discard
               </button>
             </div>
           </div>
@@ -4858,12 +4858,12 @@ function Duel() {
           <div className="target-selection-content chain-modal-content">
             <div className="target-selection-pulse"></div>
             <div className="chain-modal-header">
-              <h3>⚡ CHUỖI KÍCH HOẠT (CHAIN)</h3>
+              <h3>⚡ CHAIN ACTIVATION</h3>
               <p className="chain-source-desc">{chainPrompt.sourceAction}</p>
             </div>
             
             <div className="activatable-cards-section">
-              <h4>Chọn lá bài để kích hoạt (phản hồi):</h4>
+              <h4>Choose a card to activate (respond):</h4>
               <div className="activatable-cards-grid">
                 {getActivatableCards().map((item, i) => (
                   <div 
@@ -4882,12 +4882,12 @@ function Duel() {
                     onMouseLeave={() => setHoveredCard(null)}
                   >
                     <img src={item.card.image_url} alt={item.card.name} />
-                    <div className="card-source-tag">{item.source === 'field' ? 'Sân' : 'Tay'}</div>
+                    <div className="card-source-tag">{item.source === 'field' ? 'Field' : 'Hand'}</div>
                     <div className="activatable-card-name">{item.card.name}</div>
                   </div>
                 ))}
                 {getActivatableCards().length === 0 && (
-                  <p className="no-cards-msg">Không có lá bài nào khả dụng để kích hoạt.</p>
+                   <p className="no-cards-msg">No cards available to activate.</p>
                 )}
               </div>
             </div>
@@ -4903,12 +4903,12 @@ function Duel() {
                    if (chainPrompt.onCancel) chainPrompt.onCancel()
                 }}
               >
-                KHÔNG KÍCH HOẠT (CANCEL)
+                DO NOT ACTIVATE (CANCEL)
               </button>
             </div>
             
             <p className="chain-hint">
-              💡 Bạn cũng có thể click trực tiếp vào các lá bài đang nhấp nháy trên sân.
+              💡 You can also directly click on the highlighted cards on the field.
             </p>
           </div>
         </div>

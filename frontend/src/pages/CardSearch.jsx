@@ -118,23 +118,23 @@ function CardSearch() {
           <span className="cs-logo-meta">META</span>
         </div>
         <div className="cs-nav-links">
-          <a href="#" className="cs-nav-link" onClick={() => navigate('/')}>🏠 Trang chủ</a>
-          <a href="#" className="cs-nav-link active">🔍 Tìm kiếm bài</a>
-          <a href="#" className="cs-nav-link" onClick={() => navigate('/game')}>⚔️ Chơi ngay</a>
+          <a href="#" className="cs-nav-link" onClick={() => navigate('/')}>🏠 Home</a>
+          <a href="#" className="cs-nav-link active">🔍 Card Search</a>
+          <a href="#" className="cs-nav-link" onClick={() => navigate('/game')}>⚔️ Play Now</a>
         </div>
       </nav>
 
       <div className="cs-content">
         <div className="cs-header">
-          <h1>🔍 Tìm kiếm bài Yu-Gi-Oh!</h1>
-          <p>Tra cứu hơn {cards.length.toLocaleString()} lá bài</p>
+          <h1>🔍 Yu-Gi-Oh! Card Search</h1>
+          <p>Search over {cards.length.toLocaleString()} cards</p>
         </div>
 
         {/* Search & Filters */}
         <div className="cs-search-bar">
           <input
             type="text"
-            placeholder="Tìm theo tên, loại, hoặc mô tả..."
+            placeholder="Search by name, type, or description..."
             value={searchTerm}
             onChange={handleSearch}
             className="cs-input"
@@ -144,7 +144,7 @@ function CardSearch() {
               value={filters.cardType}
               onChange={v => handleFilterChange('cardType', v)}
               options={[
-                { value: 'all', label: 'Tất cả' },
+                { value: 'all', label: 'All' },
                 { value: 'monster', label: 'Monster' },
                 { value: 'spell', label: 'Spell' },
                 { value: 'trap', label: 'Trap' },
@@ -156,7 +156,7 @@ function CardSearch() {
                   value={filters.monsterType}
                   onChange={v => handleFilterChange('monsterType', v)}
                   options={[
-                    { value: 'all', label: 'Tất cả Monster' },
+                    { value: 'all', label: 'All Monsters' },
                     { value: 'normal', label: 'Normal' },
                     { value: 'effect', label: 'Effect' },
                     { value: 'fusion', label: 'Fusion' },
@@ -171,7 +171,7 @@ function CardSearch() {
                   value={filters.level}
                   onChange={v => handleFilterChange('level', v)}
                   options={[
-                    { value: 'all', label: 'Tất cả Level' },
+                    { value: 'all', label: 'All Levels' },
                     ...[...Array(13)].map((_, i) => ({ value: String(i + 1), label: `Level ${i + 1}` }))
                   ]}
                 />
@@ -182,7 +182,7 @@ function CardSearch() {
                 value={filters.spellType}
                 onChange={v => handleFilterChange('spellType', v)}
                 options={[
-                  { value: 'all', label: 'Tất cả Spell' },
+                  { value: 'all', label: 'All Spells' },
                   { value: 'normal', label: 'Normal' },
                   { value: 'continuous', label: 'Continuous' },
                   { value: 'quick-play', label: 'Quick-Play' },
@@ -197,7 +197,7 @@ function CardSearch() {
                 value={filters.trapType}
                 onChange={v => handleFilterChange('trapType', v)}
                 options={[
-                  { value: 'all', label: 'Tất cả Trap' },
+                  { value: 'all', label: 'All Traps' },
                   { value: 'normal', label: 'Normal' },
                   { value: 'continuous', label: 'Continuous' },
                   { value: 'counter', label: 'Counter' },
@@ -205,14 +205,14 @@ function CardSearch() {
               />
             )}
           </div>
-          <span className="cs-count">Tìm thấy: {filteredCards.length} lá</span>
+          <span className="cs-count">Found: {filteredCards.length} cards</span>
         </div>
 
         {/* Cards Grid */}
         {loading ? (
           <div className="cs-loading">
             <div className="cs-spinner" />
-            <p>Đang tải dữ liệu bài...</p>
+            <p>Loading card database...</p>
           </div>
         ) : (
           <div className="cs-grid">
@@ -237,7 +237,7 @@ function CardSearch() {
             <img src={selectedCard.card_images[0].image_url} alt={selectedCard.name} />
             <div className="cs-modal-info">
               <h2>{selectedCard.name}</h2>
-              <p><strong>Loại:</strong> {selectedCard.type}</p>
+              <p><strong>Type:</strong> {selectedCard.type}</p>
               {selectedCard.atk !== undefined && <p><strong>ATK:</strong> {selectedCard.atk}</p>}
               {selectedCard.def !== undefined && <p><strong>DEF:</strong> {selectedCard.def}</p>}
               {selectedCard.level && <p><strong>Level:</strong> {selectedCard.level}</p>}
