@@ -40,7 +40,7 @@ function Duel() {
   const [selectedAttacker, setSelectedAttacker] = useState(null)
   const [playerGraveyard, setPlayerGraveyard] = useState([])
   const [aiGraveyard, setAiGraveyard] = useState([])
-  const [battlePhase, setBattlePhase] = useState(false)
+  const [currentPhase, setCurrentPhase] = useState('MAIN1') // 'DRAW', 'STANDBY', 'MAIN1', 'BATTLE', 'MAIN2', 'END'
   const [showGraveyard, setShowGraveyard] = useState(false)
   const [graveyardOwner, setGraveyardOwner] = useState(null)
   const [damageAnimation, setDamageAnimation] = useState({ player: null, ai: null })
@@ -140,7 +140,7 @@ function Duel() {
       })
 
       socket.on('opponent-phase-update', ({ phase, turn }) => {
-        setBattlePhase(phase)
+        setCurrentPhase(phase)
         setCurrentTurn(turn)
       })
 
@@ -240,9 +240,9 @@ function Duel() {
 
   useEffect(() => {
     if (isMultiplayer && roomId) {
-      socket.emit('update-phase', { roomId, phase: battlePhase, turn: currentTurn })
+      socket.emit('update-phase', { roomId, phase: currentPhase, turn: currentTurn })
     }
-  }, [battlePhase, currentTurn, isMultiplayer, roomId])
+  }, [currentPhase, currentTurn, isMultiplayer, roomId])
 
   useEffect(() => {
     if (isMultiplayer && roomId) {
@@ -591,7 +591,7 @@ function Duel() {
 
   const aiActionBattle = () => {
     return new Promise(async (resolve) => {
-      setBattlePhase(true)
+      setCurrentPhase('BATTLE')
       
       const aiMonsters = aiFieldRef.current.monsters
         .map((m, i) => m ? { card: m, index: i } : null)
@@ -645,7 +645,7 @@ function Duel() {
       }
       
       setTimeout(() => {
-        setBattlePhase(false)
+        setCurrentPhase('MAIN2')
         resolve()
       }, 2000)
     })
@@ -791,10 +791,19 @@ function Duel() {
     }
     
     setCurrentTurn(nextTurn)
+    setCurrentPhase('DRAW')
     setDuelTurnCount(prev => prev + 1)
     setNormalSummonUsed(false)
     
-    // Draw a card for the next player using functional updates
+    // Auto proceed through Draw and Standby if no effects
+    if (nextTurn === 'player') {
+      setTimeout(() => {
+        // Draw card is already handled below or in a separate function
+        // For now, let's just move to MAIN1 after a delay
+        setCurrentPhase('STANDBY')
+        setTimeout(() => setCurrentPhase('MAIN1'), 1000)
+      }, 1000)
+    }
     if (nextTurn === 'player') {
       if (skipNextDraw.player) {
         alert('Time Seal: Bạn bỏ qua Draw Phase!')
@@ -1905,13 +1914,13 @@ function Duel() {
   }
 
   const handleNegateAttack = (isPlayerTurn) => {
-    if (!battlePhase) {
+    if (currentPhase !== 'BATTLE') {
       alert('Negate Attack chỉ có thể kích hoạt trong Battle Phase!')
       return
     }
     
-    // End battle phase and reset attacker
-    setBattlePhase(false)
+    // End battle phase and move to Main Phase 2
+    setCurrentPhase('MAIN2')
     setSelectedAttacker(null)
     
     alert('Negate Attack: Vô hiệu hóa tấn công và kết thúc Battle Phase!')
@@ -3710,13 +3719,23 @@ function Duel() {
             ))}
           </div>
 
+          {/* Phase Indicator - Center Overlay */}
+          <div className="phase-indicator-overlay">
+            <div className={`phase-item ${currentPhase === 'DRAW' ? 'active' : ''}`}>DP</div>
+            <div className={`phase-item ${currentPhase === 'STANDBY' ? 'active' : ''}`}>SP</div>
+            <div className={`phase-item ${currentPhase === 'MAIN1' ? 'active' : ''}`}>M1</div>
+            <div className={`phase-item ${currentPhase === 'BATTLE' ? 'active' : ''}`}>BP</div>
+            <div className={`phase-item ${currentPhase === 'MAIN2' ? 'active' : ''}`}>M2</div>
+            <div className={`phase-item ${currentPhase === 'END' ? 'active' : ''}`}>EP</div>
+          </div>
+
           {/* AI Monster Zones */}
           <div className="monster-zones ai-monsters">
             {aiField.monsters.map((card, i) => (
               <div 
                 key={i} 
-                className={`zone monster-zone ${battlePhase && card ? 'battle-target' : ''}`}
-                onClick={() => card && battlePhase && selectedAttacker && handleCardClick(card, 'monster', i, false)}
+                className={`zone monster-zone ${currentPhase === 'BATTLE' && card ? 'battle-target' : ''}`}
+                onClick={() => card && currentPhase === 'BATTLE' && selectedAttacker && handleCardClick(card, 'monster', i, false)}
                 onMouseEnter={() => card && card.faceUp && setHoveredCard(card)}
                 onMouseLeave={() => setHoveredCard(null)}
               >
@@ -3850,18 +3869,24 @@ function Duel() {
             <span className="battle-text">End Turn</span>
           </button>
           <button 
-            className={`battle-btn ${battlePhase ? 'battle-active' : ''} ${currentTurn === 'ai' ? 'disabled' : ''}`}
+            className={`battle-btn ${currentPhase === 'BATTLE' ? 'battle-active' : ''} ${currentTurn === 'ai' ? 'disabled' : ''}`}
             onClick={() => {
               if (currentTurn === 'player') {
-                setBattlePhase(!battlePhase)
+                if (currentPhase === 'MAIN1') {
+                  setCurrentPhase('BATTLE')
+                } else if (currentPhase === 'BATTLE') {
+                  setCurrentPhase('MAIN2')
+                }
                 setSelectedAttacker(null)
               }
             }}
-            disabled={currentTurn === 'ai'}
+            disabled={currentTurn === 'ai' || (currentPhase !== 'MAIN1' && currentPhase !== 'BATTLE')}
           >
-            <span className="battle-text">{battlePhase ? 'End Battle' : 'Battle'}</span>
+            <span className="battle-text">
+              {currentPhase === 'MAIN1' ? 'Enter Battle' : (currentPhase === 'BATTLE' ? 'End Battle' : 'Battle')}
+            </span>
           </button>
-          {battlePhase && selectedAttacker && (
+          {currentPhase === 'BATTLE' && selectedAttacker && (
             <button 
               className="battle-btn direct-attack"
               onClick={handleDirectAttack}
@@ -4115,7 +4140,7 @@ function Duel() {
             </div>
             
             {/* Change position option for monsters */}
-            {contextMenu.type === 'monster' && contextMenu.isCurrentPlayer && !battlePhase && (
+            {contextMenu.type === 'monster' && contextMenu.isCurrentPlayer && (currentPhase === 'MAIN1' || currentPhase === 'MAIN2') && (
               <>
                 {contextMenu.card.faceUp ? (
                   <button 

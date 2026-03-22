@@ -7,6 +7,34 @@
   }
 }
 
+.phase-indicator-overlay {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  gap: 10px;
+  background: rgba(0, 0, 0, 0.7);
+  padding: 5px 15px;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 215, 0, 0.3);
+  z-index: 100;
+  pointer-events: none;
+}
+
+.phase-item {
+  color: #aaaaaa;
+  font-weight: bold;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+}
+
+.phase-item.active {
+  color: #ffd700;
+  text-shadow: 0 0 10px #ffd700;
+  transform: scale(1.2);
+}
+
 @keyframes slideIn {
   from {
     transform: translateY(20px);
