@@ -710,14 +710,17 @@ function Duel() {
         .map((m, i) => m ? { card: m, index: i } : null)
         .filter(m => m !== null && m.card.position === 'attack')
       
+      console.log(`AI Battle Phase: Found ${aiMonsters.length} monsters in attack position. Turn: ${duelTurnCount}`)
+
       if (aiMonsters.length === 0 || duelTurnCount === 1) {
         if (duelTurnCount === 1) console.log("AI cannot attack on Turn 1")
+        else console.log("AI has no monsters in attack position to attack with")
         setTimeout(resolve, 1000)
         return
       }
 
       // Sort AI attackers by ATK to maximize damage
-      const attackers = aiMonsters.sort((a, b) => b.card.atk - a.card.atk)
+      const attackers = [...aiMonsters].sort((a, b) => b.card.atk - a.card.atk)
 
       for (const attacker of attackers) {
         // Re-check field (in case something happened during previous attack)
@@ -1122,8 +1125,8 @@ function Duel() {
         return
       }
       
-      // Check if normal summon already used (set also counts as normal summon)
-      if (normalSummonUsed) {
+      // Check if normal summon already used (set also counts as normal summon for MONSTERS)
+      if (card.type.includes('Monster') && normalSummonUsed) {
         alert('Bạn đã Normal Summon trong turn này!')
         return
       }
@@ -3469,10 +3472,6 @@ function Duel() {
         onCancel: () => executeBattleCalculation(attacker, defender),
         context: { type: 'attack', attacker, defender }
       })
-      // If AI, auto-cancel for now (until AI is fully implemented)
-      if (isPlayerAttacking) {
-        // AI will be handled by handleAiChainResponse via useEffect
-      }
       return
     }
 
@@ -3482,14 +3481,14 @@ function Duel() {
   const executeBattleCalculation = (attacker, defender) => {
     // Re-verify attacker still exists on field
     const isPlayerAttacking = currentTurn === 'player'
-    const freshAttackerField = isPlayerAttacking ? playerField : aiField
+    const freshAttackerField = isPlayerAttacking ? playerFieldRef.current : aiFieldRef.current
     if (!freshAttackerField.monsters[attacker.index] || freshAttackerField.monsters[attacker.index].id !== attacker.card.id) {
       console.log("Attack cancelled: Attacker no longer on field or changed")
       return
     }
 
     // Re-verify defender still exists on field
-    const freshDefenderField = isPlayerAttacking ? aiField : playerField
+    const freshDefenderField = isPlayerAttacking ? aiFieldRef.current : playerFieldRef.current
     if (!freshDefenderField.monsters[defender.index] || freshDefenderField.monsters[defender.index].id !== defender.card.id) {
        console.log("Attack cancelled: Defender no longer on field or changed")
        return
@@ -3497,12 +3496,9 @@ function Duel() {
 
     const attackerCard = attacker.card
     const defenderCard = defender.card
-    const attackerField = isPlayerAttacking ? playerField : aiField
-    const defenderField = isPlayerAttacking ? aiField : playerField
+    
     const setAttackerField = isPlayerAttacking ? setPlayerField : setAiField
     const setDefenderField = isPlayerAttacking ? setAiField : setPlayerField
-    const attackerGY = isPlayerAttacking ? playerGraveyard : aiGraveyard
-    const defenderGY = isPlayerAttacking ? aiGraveyard : playerGraveyard
     const setAttackerGY = isPlayerAttacking ? setPlayerGraveyard : setAiGraveyard
     const setDefenderGY = isPlayerAttacking ? setAiGraveyard : setPlayerGraveyard
 
@@ -3512,108 +3508,103 @@ function Duel() {
     // Battle calculation
     if (defenderCard.faceUp) {
       if (defenderCard.position === 'attack') {
-        // Attack vs Attack
         const atkDiff = attackerCard.atk - defenderCard.atk
-        
         if (atkDiff > 0) {
-          // Attacker wins
           battleLog = `${attackerCard.name} (${attackerCard.atk}) phá hủy ${defenderCard.name} (${defenderCard.atk})!`
           damage = atkDiff
-          
-          // Destroy defender
-          const newDefenderMonsters = [...defenderField.monsters]
-          setDefenderGY([...defenderGY, defenderCard])
-          newDefenderMonsters[defender.index] = null
-          setDefenderField({ ...defenderField, monsters: newDefenderMonsters })
-          
-          // Damage to defender
+          setDefenderField(prev => {
+            const next = { ...prev, monsters: [...prev.monsters] }
+            next.monsters[defender.index] = null
+            if (isPlayerAttacking) aiFieldRef.current = next
+            else playerFieldRef.current = next
+            return next
+          })
+          setDefenderGY(prev => [...prev, defenderCard])
           const target = isPlayerAttacking ? 'ai' : 'player'
           if (!checkForHandTraps(target, damage, (finalAmt) => animateLP(target, finalAmt))) {
             animateLP(target, damage)
           }
         } else if (atkDiff < 0) {
-          // Defender wins
           battleLog = `${defenderCard.name} (${defenderCard.atk}) phá hủy ${attackerCard.name} (${attackerCard.atk})!`
           damage = Math.abs(atkDiff)
-          
-          // Destroy attacker
-          const newAttackerMonsters = [...attackerField.monsters]
-          setAttackerGY([...attackerGY, attackerCard])
-          newAttackerMonsters[attacker.index] = null
-          setAttackerField({ ...attackerField, monsters: newAttackerMonsters })
-          
-          // Damage to attacker
+          setAttackerField(prev => {
+            const next = { ...prev, monsters: [...prev.monsters] }
+            next.monsters[attacker.index] = null
+            if (isPlayerAttacking) playerFieldRef.current = next
+            else aiFieldRef.current = next
+            return next
+          })
+          setAttackerGY(prev => [...prev, attackerCard])
           const target = isPlayerAttacking ? 'player' : 'ai'
           if (!checkForHandTraps(target, damage, (finalAmt) => animateLP(target, finalAmt))) {
             animateLP(target, damage)
           }
         } else {
-          // Draw - both destroyed
           battleLog = `Cả hai quái thú bị phá hủy!`
-          
-          const newAttackerMonsters = [...attackerField.monsters]
-          const newDefenderMonsters = [...defenderField.monsters]
-          
-          setAttackerGY([...attackerGY, attackerCard])
-          setDefenderGY([...defenderGY, defenderCard])
-          
-          newAttackerMonsters[attacker.index] = null
-          newDefenderMonsters[defender.index] = null
-          
-          setAttackerField({ ...attackerField, monsters: newAttackerMonsters })
-          setDefenderField({ ...defenderField, monsters: newDefenderMonsters })
+          setAttackerField(prev => {
+            const next = { ...prev, monsters: [...prev.monsters] }
+            next.monsters[attacker.index] = null
+            if (isPlayerAttacking) playerFieldRef.current = next
+            else aiFieldRef.current = next
+            return next
+          })
+          setDefenderField(prev => {
+            const next = { ...prev, monsters: [...prev.monsters] }
+            next.monsters[defender.index] = null
+            if (isPlayerAttacking) aiFieldRef.current = next
+            else playerFieldRef.current = next
+            return next
+          })
+          setAttackerGY(prev => [...prev, attackerCard])
+          setDefenderGY(prev => [...prev, defenderCard])
         }
       } else {
-        // Attack vs Defense
         const atkVsDef = attackerCard.atk - defenderCard.def
-        
         if (atkVsDef > 0) {
-          // Attacker wins
           battleLog = `${attackerCard.name} (${attackerCard.atk}) phá hủy ${defenderCard.name} (DEF ${defenderCard.def})!`
-          
-          // Destroy defender
-          const newDefenderMonsters = [...defenderField.monsters]
-          setDefenderGY([...defenderGY, defenderCard])
-          newDefenderMonsters[defender.index] = null
-          setDefenderField({ ...defenderField, monsters: newDefenderMonsters })
+          setDefenderField(prev => {
+            const next = { ...prev, monsters: [...prev.monsters] }
+            next.monsters[defender.index] = null
+            if (isPlayerAttacking) aiFieldRef.current = next
+            else playerFieldRef.current = next
+            return next
+          })
+          setDefenderGY(prev => [...prev, defenderCard])
         } else if (atkVsDef < 0) {
-          // Defender survives
           battleLog = `${defenderCard.name} (DEF ${defenderCard.def}) chặn được tấn công!`
           damage = Math.abs(atkVsDef)
-          
-          // Damage to attacker
           const target = isPlayerAttacking ? 'player' : 'ai'
           if (!checkForHandTraps(target, damage, (finalAmt) => animateLP(target, finalAmt))) {
             animateLP(target, damage)
           }
         } else {
-          // No damage
           battleLog = `Không có damage!`
         }
       }
     } else {
-      // Attack face-down monster - flip it
       const defenderOwner = isPlayerAttacking ? 'ai' : 'player'
-      const newDefenderMonsters = [...defenderField.monsters]
-      newDefenderMonsters[defender.index] = { ...defenderCard, faceUp: true }
-      setDefenderField({ ...defenderField, monsters: newDefenderMonsters })
-      
-      // Trigger Flip Effect
+      setDefenderField(prev => {
+        const next = { ...prev, monsters: [...prev.monsters] }
+        next.monsters[defender.index] = { ...defenderCard, faceUp: true }
+        if (isPlayerAttacking) aiFieldRef.current = next
+        else playerFieldRef.current = next
+        return next
+      })
       handleFlipEffect(defenderCard, defender.index, defenderOwner)
-      
-      // Then calculate damage
       const atkVsDef = attackerCard.atk - defenderCard.def
-      
       if (atkVsDef > 0) {
         battleLog = `Lật bài: ${defenderCard.name} (DEF ${defenderCard.def}) bị phá hủy!`
-        setDefenderGY([...defenderGY, defenderCard])
-        newDefenderMonsters[defender.index] = null
-        setDefenderField({ ...defenderField, monsters: newDefenderMonsters })
+        setDefenderGY(prev => [...prev, defenderCard])
+        setDefenderField(prev => {
+          const next = { ...prev, monsters: [...prev.monsters] }
+          next.monsters[defender.index] = null
+          if (isPlayerAttacking) aiFieldRef.current = next
+          else playerFieldRef.current = next
+          return next
+        })
       } else if (atkVsDef < 0) {
         battleLog = `Lật bài: ${defenderCard.name} (DEF ${defenderCard.def}) chặn được!`
         damage = Math.abs(atkVsDef)
-        
-        // Damage to attacker
         const target = isPlayerAttacking ? 'player' : 'ai'
         if (!checkForHandTraps(target, damage, (finalAmt) => animateLP(target, finalAmt))) {
           animateLP(target, damage)
@@ -3649,17 +3640,14 @@ function Duel() {
         active: true,
         player: isPlayerAttacking ? 'ai' : 'player',
         sourceAction: `${attackerCard.name} tấn công trực tiếp!`,
-        onResolve: () => executeDirectAttack(),
-        onCancel: () => executeDirectAttack(),
-        context: { type: 'direct_attack', attacker: selectedAttacker }
+        onResolve: () => executeDirectAttack(aiAttacker),
+        onCancel: () => executeDirectAttack(aiAttacker),
+        context: { type: 'direct_attack', attacker }
       })
-      if (isPlayerAttacking) {
-        // AI will be handled by handleAiChainResponse via useEffect
-      }
       return
     }
 
-    executeDirectAttack()
+    executeDirectAttack(aiAttacker)
   }
 
   const executeDirectAttack = (aiAttacker = null) => {
@@ -3668,7 +3656,7 @@ function Duel() {
 
     // Re-verify attacker still exists on field
     const isPlayerAttacking = currentTurn === 'player'
-    const freshAttackerField = isPlayerAttacking ? playerField : aiField
+    const freshAttackerField = isPlayerAttacking ? playerFieldRef.current : aiFieldRef.current
     if (!freshAttackerField.monsters[attacker.index] || freshAttackerField.monsters[attacker.index].id !== attacker.card.id) {
       console.log("Direct Attack cancelled: Attacker no longer on field")
       if (!aiAttacker) setSelectedAttacker(null)
@@ -3678,11 +3666,11 @@ function Duel() {
     const attackerCard = attacker.card
     
     // Re-check monsters
-    const opponentField = isPlayerAttacking ? aiField : playerField
+    const opponentField = isPlayerAttacking ? aiFieldRef.current : playerFieldRef.current
     const hasMonsters = opponentField.monsters.some(m => m !== null)
     if (hasMonsters) {
       alert('Tấn công trực tiếp bị hủy vì đối thủ có quái thú mởi trên sân!')
-      setSelectedAttacker(null)
+      if (!aiAttacker) setSelectedAttacker(null)
       return
     }
 
