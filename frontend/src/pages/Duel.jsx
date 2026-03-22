@@ -1172,6 +1172,7 @@ function Duel() {
     const shouldStayOnField = spellType.includes('Continuous') || 
                              spellType.includes('Field') || 
                              spellType.includes('Equip') ||
+                             card.type.includes('Continuous') ||
                              cardName.includes('swords of revealing light') ||
                              cardName.includes('megamorph') ||
                              cardName.includes('book of secret arts') ||
@@ -1404,14 +1405,27 @@ function Duel() {
       
       setTimeout(() => {
         setActivatingSpell(null)
-        // Send trap to GY after activation since it's a normal trap usually
-        const gy = owner === 'player' ? playerGraveyard : aiGraveyard
-        const setGy = owner === 'player' ? setPlayerGraveyard : setAiGraveyard
         
-        const finalSpells = [...playingField.spells]
-        finalSpells[zoneIndex] = null
-        setPlayingField({ ...playingField, spells: finalSpells })
-        setGy([...gy, card])
+        const isContinuous = card.race?.includes('Continuous') || card.type?.includes('Continuous') || 
+                            card.race?.includes('Field') || card.race?.includes('Equip')
+        
+        if (!isContinuous) {
+          // Send to GY after activation for normal cards
+          const gy = owner === 'player' ? playerGraveyard : aiGraveyard
+          const setGy = owner === 'player' ? setPlayerGraveyard : setAiGraveyard
+          
+          const finalSpells = [...playingField.spells]
+          finalSpells[zoneIndex] = null
+          setPlayingField({ ...playingField, spells: finalSpells })
+          setGy([...gy, card])
+        } else {
+          // Keep on field and mark as active
+          const finalSpells = [...playingField.spells]
+          finalSpells[zoneIndex] = { ...card, faceUp: true, isActive: true }
+          setPlayingField({ ...playingField, spells: finalSpells })
+        }
+        
+        // Apply effect
         
         // Apply effect - if it's an attack, pass attacker/defender; else pass null
         applyTrapEffect(card, attacker || null, defender || null, owner === 'player', chainPrompt.context.type, () => {

@@ -34,6 +34,34 @@ const yugiDeck = {
       race: "Spellcaster",
       attribute: "DARK",
       image_url: "https://images.ygoprodeck.com/images/cards/38033121.jpg"
+    },
+    {
+      id: 72302403,
+      name: "Swords of Revealing Light",
+      type: "Normal Spell",
+      race: "Continuous",
+      desc: "After this card's activation, it remains on the field, but it is destroyed during the End Phase of your opponent's 3rd turn. Opponent's monsters cannot declare an attack.",
+      image_url: "https://images.ygoprodeck.com/images/cards/72302403.jpg"
+    },
+    {
+      id: 54652250,
+      name: "Man-Eater Bug",
+      type: "Effect Monster",
+      race: "Insect",
+      desc: "FLIP: Target 1 monster on the field; destroy that target.",
+      atk: 450,
+      def: 600,
+      level: 2,
+      attribute: "EARTH",
+      image_url: "https://images.ygoprodeck.com/images/cards/54652250.jpg"
+    },
+    {
+      id: 44095762,
+      name: "Mirror Force",
+      type: "Normal Trap",
+      race: "Normal",
+      desc: "When an opponent's monster declares an attack: Destroy all your opponent's Attack Position monsters.",
+      image_url: "https://images.ygoprodeck.com/images/cards/44095762.jpg"
     }
   ],
   extra: []
@@ -82,6 +110,14 @@ const kaibaDeck = {
       race: "Dragon",
       attribute: "LIGHT",
       image_url: "https://images.ygoprodeck.com/images/cards/89631139.jpg"
+    },
+    {
+      id: 22046459,
+      name: "Megamorph",
+      type: "Equip Spell",
+      race: "Equip",
+      desc: "While your LP is lower than your opponent's, the equipped monster's ATK becomes double its original ATK. While your LP is higher, it becomes half its original ATK.",
+      image_url: "https://images.ygoprodeck.com/images/cards/22046459.jpg"
     }
   ],
   extra: []
@@ -100,6 +136,18 @@ const joeyDeck = {
       race: "Dragon",
       attribute: "DARK",
       image_url: "https://images.ygoprodeck.com/images/cards/74677422.jpg"
+    },
+    {
+      id: 71625222,
+      name: "Time Wizard",
+      type: "Effect Monster",
+      race: "Spellcaster",
+      desc: "Once per turn: You can toss a coin and call it. If you call it right, destroy all monsters your opponent controls. If you call it wrong, destroy all monsters you control, and if you do, you take damage equal to half the total ATK those destroyed monsters had on the field.",
+      atk: 500,
+      def: 400,
+      level: 2,
+      attribute: "LIGHT",
+      image_url: "https://images.ygoprodeck.com/images/cards/71625222.jpg"
     }
   ],
   extra: []
