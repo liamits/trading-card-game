@@ -17,17 +17,12 @@ function CharacterSelect() {
   const [opponentCharacter, setOpponentCharacter] = useState(null)
   const [loading, setLoading] = useState(true)
   const [selectingFor, setSelectingFor] = useState('player') // 'player' or 'ai'
-  const [showDuelLoading, setShowDuelLoading] = useState(true)
   const [isReady, setIsReady] = useState(false)
   const [showVsIntro, setShowVsIntro] = useState(false)
 
   useEffect(() => {
-    // Show duel loading for 2 seconds when entering this page
-    const timer = setTimeout(() => {
-      setShowDuelLoading(false)
-      fetchCharacters()
-      fetchProfile()
-    }, 2000)
+    fetchCharacters()
+    fetchProfile()
 
     if (isMultiplayer && roomId) {
       socket.on('duel-start', (room) => {
@@ -48,7 +43,6 @@ function CharacterSelect() {
     }
 
     return () => {
-      clearTimeout(timer)
       socket.off('duel-start')
     }
   }, [isMultiplayer, roomId])
@@ -146,7 +140,7 @@ function CharacterSelect() {
     )
   }
 
-  if (showDuelLoading || loading) {
+  if (loading) {
     return (
       <div className="duel-loading-screen">
         <div className="duel-loading-background" />

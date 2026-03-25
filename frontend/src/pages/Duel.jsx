@@ -14,13 +14,17 @@ function Duel() {
   // In multiplayer, 'ai' refers to the other human player
   const duelOpponent = isMultiplayer ? opponent : ai
 
-  const [playerLP, setPlayerLP] = useState(8000)
-  const [aiLP, setAiLP] = useState(8000)
-  const [playerHand, setPlayerHand] = useState([])
-  const [aiHand, setAiHand] = useState([])
-  const [playerDeck, setPlayerDeck] = useState([])
-  const [aiDeck, setAiDeck] = useState([])
-  const [currentTurn, setCurrentTurn] = useState('player') // 'player' or 'ai'
+  const [firstTurnDrawSkipped, setFirstTurnDrawSkipped] = useState(false)
+  const [skipNextDraw, setSkipNextDraw] = useState({ player: false, ai: false })
+  const [swordsActive, setSwordsActive] = useState({ active: false, owner: null, turnsLeft: 0, zoneIndex: null })
+
+  const [playerLP, _setPlayerLP] = useState(8000)
+  const [aiLP, _setAiLP] = useState(8000)
+  const [playerHand, _setPlayerHand] = useState([])
+  const [aiHand, _setAiHand] = useState([])
+  const [playerDeck, _setPlayerDeck] = useState([])
+  const [aiDeck, _setAiDeck] = useState([])
+  const [currentTurn, _setCurrentTurn] = useState('player') // 'player' or 'ai'
   const [hoveredCard, setHoveredCard] = useState(null)
   const [showCoinToss, setShowCoinToss] = useState(true)
   const [coinFlipping, setCoinFlipping] = useState(false)
@@ -28,20 +32,20 @@ function Duel() {
   const [playerChoice, setPlayerChoice] = useState(null)
   const [showExtraDeck, setShowExtraDeck] = useState(false)
   const [draggedCard, setDraggedCard] = useState(null)
-  const [playerField, setPlayerField] = useState({
+  const [playerField, _setPlayerField] = useState({
     monsters: [null, null, null, null, null],
     spells: [null, null, null, null, null]
   })
-  const [aiField, setAiField] = useState({
+  const [aiField, _setAiField] = useState({
     monsters: [null, null, null, null, null],
     spells: [null, null, null, null, null]
   })
   const [showCardOptions, setShowCardOptions] = useState(false)
   const [selectedZone, setSelectedZone] = useState(null)
   const [selectedAttacker, setSelectedAttacker] = useState(null)
-  const [playerGraveyard, setPlayerGraveyard] = useState([])
-  const [aiGraveyard, setAiGraveyard] = useState([])
-  const [currentPhase, setCurrentPhase] = useState('MAIN1') // 'DRAW', 'STANDBY', 'MAIN1', 'BATTLE', 'MAIN2', 'END'
+  const [playerGraveyard, _setPlayerGraveyard] = useState([])
+  const [aiGraveyard, _setAiGraveyard] = useState([])
+  const [currentPhase, _setCurrentPhase] = useState('MAIN1') // 'DRAW', 'STANDBY', 'MAIN1', 'BATTLE', 'MAIN2', 'END'
   const [showGraveyard, setShowGraveyard] = useState(false)
   const [graveyardOwner, setGraveyardOwner] = useState(null)
   const [damageAnimation, setDamageAnimation] = useState({ player: null, ai: null })
@@ -94,7 +98,7 @@ function Duel() {
     message: ''
   })
   
-  const [duelTurnCount, setDuelTurnCount] = useState(1)
+  const [duelTurnCount, _setDuelTurnCount] = useState(1)
   
   // Refs for AI to avoid stale closures
   const playerFieldRef = useRef(playerField)
@@ -105,6 +109,15 @@ function Duel() {
   const aiDeckRef = useRef(aiDeck)
   const playerGraveyardRef = useRef(playerGraveyard)
   const aiGraveyardRef = useRef(aiGraveyard)
+  const currentPhaseRef = useRef(currentPhase)
+  const currentTurnRef = useRef(currentTurn)
+  const duelTurnCountRef = useRef(duelTurnCount)
+  const playerLPRef = useRef(playerLP)
+  const aiLPRef = useRef(aiLP)
+  const playerRef = useRef(player)
+  const aiRef = useRef(ai)
+  const phaseInProgressRef = useRef(null) // tracks { turn, count, phase }
+  const swordsActiveRef = useRef(swordsActive)
 
   useEffect(() => { playerFieldRef.current = playerField }, [playerField])
   useEffect(() => { aiFieldRef.current = aiField }, [aiField])
@@ -114,6 +127,14 @@ function Duel() {
   useEffect(() => { aiDeckRef.current = aiDeck }, [aiDeck])
   useEffect(() => { playerGraveyardRef.current = playerGraveyard }, [playerGraveyard])
   useEffect(() => { aiGraveyardRef.current = aiGraveyard }, [aiGraveyard])
+  useEffect(() => { currentPhaseRef.current = currentPhase }, [currentPhase])
+  useEffect(() => { currentTurnRef.current = currentTurn }, [currentTurn])
+  useEffect(() => { duelTurnCountRef.current = duelTurnCount }, [duelTurnCount])
+  useEffect(() => { playerLPRef.current = playerLP }, [playerLP])
+  useEffect(() => { aiLPRef.current = aiLP }, [aiLP])
+  useEffect(() => { playerRef.current = player }, [player])
+  useEffect(() => { aiRef.current = ai }, [ai])
+  useEffect(() => { swordsActiveRef.current = swordsActive }, [swordsActive])
   
   // Chain System States
   const [chainStack, setChainStack] = useState([])
@@ -125,8 +146,6 @@ function Duel() {
     onCancel: null // if they choose not to chain
   })
 
-  const [firstTurnDrawSkipped, setFirstTurnDrawSkipped] = useState(false)
-  const [skipNextDraw, setSkipNextDraw] = useState({ player: false, ai: false })
   
   // Phase 4 States
 
@@ -340,45 +359,242 @@ function Duel() {
   }, [chainPrompt.active, isMultiplayer])
 
   const handleAiTurn = async () => {
-    const aiLevel = ai?.difficulty || 3
-    console.log(`AI is thinking (Level ${aiLevel})...`)
-    
-    // Level 1: Beginner - 30% chance to do nothing and end turn
-    if (aiLevel === 1 && Math.random() < 0.3) {
-      console.log("AI Level 1 decided to skip turn actions")
-      setTimeout(() => proceedEndTurn(), 1000)
-      return
-    }
+    try {
+      const aiLevel = aiRef.current?.difficulty || ai?.difficulty || 3
+      console.log(`[AI] Turn started. Count: ${duelTurnCountRef.current}. Phase: ${currentPhaseRef.current}. Level: ${aiLevel}`)
+      
+      // Level 1: Beginner - 30% chance to do nothing and end turn
+      if (aiLevel === 1 && Math.random() < 0.3) {
+        console.log("[AI] Level 1 decided to skip turn actions")
+        setTimeout(() => {
+          if (currentTurnRef.current === 'ai' && !gameOver) proceedEndTurn()
+        }, 1000)
+        return
+      }
 
-    // 1. Draw Phase (Already handled by proceedEndTurn/useEffect)
-    
-    // 2. Standby Phase (Automatic for now)
-    
-    // 3. Main Phase 1: Summoning
-    await aiActionSummon(aiLevel)
-    
-    // 4. Main Phase 1: Activate/Set Spells/Traps
-    await aiActionSpells(aiLevel)
-    
-    // 5. Battle Phase
-    await aiActionBattle(aiLevel)
-    
-    // 6. End Turn
-    setTimeout(() => {
-      proceedEndTurn()
-    }, 1000)
+      // 0. Wait for MAIN1 phase to begin actions
+      let waitCount = 0
+      while (currentPhaseRef.current !== 'MAIN1' && !gameOver) {
+        if (currentTurnRef.current !== 'ai') {
+          console.log("[AI] Turn interrupted: No longer AI turn while waiting for MAIN1")
+          return
+        }
+        if (waitCount > 20) {
+          console.log("[AI] Safety: Waiting too long for MAIN1. Current phase in Ref:", currentPhaseRef.current, "State:", currentPhase)
+          if (currentPhase === 'MAIN1' || currentPhaseRef.current === 'MAIN1') break
+          // If stuck in standby, force MAIN1
+          if (currentPhaseRef.current === 'STANDBY') {
+             console.log("[AI] Forcing MAIN1 from STANDBY")
+             setCurrentPhase('MAIN1')
+             break
+          }
+        }
+        waitCount++
+        await new Promise(r => setTimeout(r, 500))
+      }
+
+      if (currentTurnRef.current !== 'ai' || gameOver) return
+
+      console.log("[AI] Entering MAIN1 Actions")
+      // 1. Summon Phase
+      await aiActionSummon(aiLevel)
+      
+      if (currentTurnRef.current !== 'ai' || gameOver) return
+
+      // 4. Main Phase 1: Activate/Set Spells/Traps
+      console.log("[AI] Entering Spell Actions")
+      await aiActionSpells(aiLevel)
+      
+      if (currentTurnRef.current !== 'ai' || gameOver) return
+
+      // 5. Battle Phase
+      console.log("[AI] Entering Battle Actions")
+      await aiActionBattle(aiLevel)
+      
+      if (currentTurnRef.current !== 'ai' || gameOver) return
+
+      // 6. End Turn
+      console.log("[AI] AI Loop complete. Ending turn.")
+      setTimeout(() => {
+        if (currentTurnRef.current === 'ai' && !gameOver) proceedEndTurn()
+      }, 1000)
+    } catch (err) {
+      console.error("[AI] CRITICAL ERROR in handleAiTurn:", err)
+      // Attempt to salvage by ending turn after 3s
+      setTimeout(() => {
+        if (currentTurnRef.current === 'ai' && !gameOver) proceedEndTurn()
+      }, 3000)
+    }
+  }
+
+  // State Wrappers that also update Refs immediately
+  const setCurrentPhase = (phase) => {
+    if (typeof phase === 'function') {
+      _setCurrentPhase(prev => {
+        const next = phase(prev)
+        currentPhaseRef.current = next
+        return next
+      })
+    } else {
+      _setCurrentPhase(phase)
+      currentPhaseRef.current = phase
+    }
+  }
+
+  const setCurrentTurn = (turn) => {
+    _setCurrentTurn(turn)
+    currentTurnRef.current = turn
+  }
+
+  const setPlayerField = (field) => {
+    if (typeof field === 'function') {
+      _setPlayerField(prev => {
+        const next = field(prev)
+        playerFieldRef.current = next
+        return next
+      })
+    } else {
+      _setPlayerField(field)
+      playerFieldRef.current = field
+    }
+  }
+
+  const setAiField = (field) => {
+    if (typeof field === 'function') {
+      _setAiField(prev => {
+        const next = field(prev)
+        aiFieldRef.current = next
+        return next
+      })
+    } else {
+      _setAiField(field)
+      aiFieldRef.current = field
+    }
+  }
+
+  const setPlayerHand = (hand) => {
+    if (typeof hand === 'function') {
+      _setPlayerHand(prev => {
+        const next = hand(prev)
+        playerHandRef.current = next
+        return next
+      })
+    } else {
+      _setPlayerHand(hand)
+      playerHandRef.current = hand
+    }
+  }
+
+  const setAiHand = (hand) => {
+    if (typeof hand === 'function') {
+      _setAiHand(prev => {
+        const next = hand(prev)
+        aiHandRef.current = next
+        return next
+      })
+    } else {
+      _setAiHand(hand)
+      aiHandRef.current = hand
+    }
+  }
+
+  const setPlayerDeck = (deck) => {
+    if (typeof deck === 'function') {
+      _setPlayerDeck(prev => {
+        const next = deck(prev)
+        playerDeckRef.current = next
+        return next
+      })
+    } else {
+      _setPlayerDeck(deck)
+      playerDeckRef.current = deck
+    }
+  }
+
+  const setAiDeck = (deck) => {
+    if (typeof deck === 'function') {
+      _setAiDeck(prev => {
+        const next = deck(prev)
+        aiDeckRef.current = next
+        return next
+      })
+    } else {
+      _setAiDeck(deck)
+      aiDeckRef.current = deck
+    }
+  }
+
+  const setPlayerGraveyard = (gy) => {
+    if (typeof gy === 'function') {
+      _setPlayerGraveyard(prev => {
+        const next = gy(prev)
+        playerGraveyardRef.current = next
+        return next
+      })
+    } else {
+      _setPlayerGraveyard(gy)
+      playerGraveyardRef.current = gy
+    }
+  }
+
+  const setAiGraveyard = (gy) => {
+    if (typeof gy === 'function') {
+      _setAiGraveyard(prev => {
+        const next = gy(prev)
+        aiGraveyardRef.current = next
+        return next
+      })
+    } else {
+      _setAiGraveyard(gy)
+      aiGraveyardRef.current = gy
+    }
+  }
+
+  const setPlayerLP = (lp) => {
+    if (typeof lp === 'function') {
+      _setPlayerLP(prev => {
+        const next = lp(prev)
+        playerLPRef.current = next
+        return next
+      })
+    } else {
+      _setPlayerLP(lp)
+      playerLPRef.current = lp
+    }
+  }
+
+  const setAiLP = (lp) => {
+    if (typeof lp === 'function') {
+      _setAiLP(prev => {
+        const next = lp(prev)
+        aiLPRef.current = next
+        return next
+      })
+    } else {
+      _setAiLP(lp)
+      aiLPRef.current = lp
+    }
+  }
+
+  const setDuelTurnCount = (count) => {
+    if (typeof count === 'function') {
+      _setDuelTurnCount(prev => {
+        const next = count(prev)
+        duelTurnCountRef.current = next
+        return next
+      })
+    } else {
+      _setDuelTurnCount(count)
+      duelTurnCountRef.current = count
+    }
   }
 
   const aiActionSummon = (aiLevel) => {
     return new Promise((resolve) => {
       try {
+        console.log("[AI Summon] Checking field and hand...")
         if (normalSummonUsed) {
-          setTimeout(resolve, 500)
-          return
-        }
-
-        // Level 1: Beginner - 50% chance to skip summoning even if possible
-        if (aiLevel === 1 && Math.random() < 0.5) {
+          console.log("[AI Summon] Normal summon already used this turn")
           setTimeout(resolve, 500)
           return
         }
@@ -387,6 +603,8 @@ function Duel() {
           .map((c, i) => ({ card: c, index: i }))
           .filter(m => m.card.type.includes('Monster'))
           .sort((a, b) => b.card.atk - a.card.atk)
+
+        console.log(`[AI Summon] monstersInHand: ${monstersInHand.length}`)
 
         const availableMonsters = aiFieldRef.current.monsters.filter(m => m !== null)
         const emptyZoneIndex = aiFieldRef.current.monsters.findIndex(m => m === null)
@@ -404,6 +622,7 @@ function Duel() {
 
           if (tributesNeeded === 0 && emptyZoneIndex !== -1) {
             const card = m.card
+            console.log(`[AI Summon] Attempting to normal summon ${card.name}`)
             let position = 'attack'
             let faceUp = true
             
@@ -416,14 +635,11 @@ function Duel() {
 
             const newHand = aiHandRef.current.filter((_, i) => i !== m.index)
             setAiHand(newHand)
-            aiHandRef.current = newHand
 
             setAiField(prev => {
               const newMonsters = [...prev.monsters]
               newMonsters[emptyZoneIndex] = { ...card, faceUp, position, justSummoned: true }
-              const next = { ...prev, monsters: newMonsters }
-              aiFieldRef.current = next
-              return next
+              return { ...prev, monsters: newMonsters }
             })
             setNormalSummonUsed(true)
             console.log(`AI ${faceUp ? 'Normal Summoned' : 'Set'} ${card.name}`)
@@ -444,27 +660,22 @@ function Duel() {
               }
               const newEmptyZone = newMonsters.findIndex(mz => mz === null)
               newMonsters[newEmptyZone] = { ...card, faceUp: true, position: 'attack', justSummoned: true }
-              const next = { ...prev, monsters: newMonsters }
-              aiFieldRef.current = next
-              return next
+              return { ...prev, monsters: newMonsters }
             })
 
-            setAiGraveyard(prev => {
-              const next = [...prev, ...tributes]
-              return next
-            })
+            setAiGraveyard(prev => [...prev, ...tributes])
             
             const newHand = aiHandRef.current.filter((_, i) => i !== m.index)
             setAiHand(newHand)
-            aiHandRef.current = newHand
             setNormalSummonUsed(true)
             console.log(`AI Tribute Summoned ${card.name}`)
             break
           }
         }
       } catch (err) {
-        console.error("Error in aiActionSummon:", err)
+        console.error("[AI Summon] Error:", err)
       } finally {
+        console.log("[AI Summon] Completed")
         setTimeout(resolve, 1000)
       }
     })
@@ -473,25 +684,23 @@ function Duel() {
   const aiActionSpells = (aiLevel) => {
     return new Promise(async (resolve) => {
       try {
+        console.log("[AI Spells] Starting spell check...")
         // 1. Pot of Greed / Graceful Charity
         const potIndex = aiHandRef.current.findIndex(c => c.name === 'Pot of Greed')
         if (potIndex !== -1) {
           const card = aiHandRef.current[potIndex]
-          console.log("AI activating Pot of Greed")
+          console.log("[AI Spells] Activating Pot of Greed")
           const newHand = aiHandRef.current.filter((_, i) => i !== potIndex)
           setAiHand(newHand)
-          aiHandRef.current = newHand
           
           setAiGraveyard(prev => [...prev, card])
           if (aiDeckRef.current.length >= 2) {
             const drawn = aiDeckRef.current.slice(0, 2)
             const handWithDrawn = [...aiHandRef.current, ...drawn]
             setAiHand(handWithDrawn)
-            aiHandRef.current = handWithDrawn
             
             const newDeck = aiDeckRef.current.slice(2)
             setAiDeck(newDeck)
-            aiDeckRef.current = newDeck
           }
           await new Promise(r => setTimeout(r, 1000))
         }
@@ -514,15 +723,14 @@ function Duel() {
               console.log("AI activating Raigeki")
               const newHand = aiHandRef.current.filter((_, i) => i !== raigekiIndex)
               setAiHand(newHand)
-              aiHandRef.current = newHand
               
               setAiGraveyard(prev => [...prev, card])
               executeEffect(card, { 
                 isPlayerTurn: false,
-                playerField: playerFieldRef.current, setPlayerField,
-                aiField: aiFieldRef.current, setAiField,
-                playerGraveyard: playerGraveyardRef.current, setPlayerGraveyard,
-                aiGraveyard: aiGraveyardRef.current, setAiGraveyard
+                playerField: playerFieldRef.current, setPlayerField: setPlayerField,
+                aiField: aiFieldRef.current, setAiField: setAiField,
+                playerGraveyard: playerGraveyardRef.current, setPlayerGraveyard: setPlayerGraveyard,
+                aiGraveyard: aiGraveyardRef.current, setAiGraveyard: setAiGraveyard
               })
               await new Promise(r => setTimeout(r, 1000))
             }
@@ -532,14 +740,13 @@ function Duel() {
             console.log("AI activating Raigeki")
             const newHand = aiHandRef.current.filter((_, i) => i !== raigekiIndex)
             setAiHand(newHand)
-            aiHandRef.current = newHand
             setAiGraveyard(prev => [...prev, card])
             executeEffect(card, { 
               isPlayerTurn: false,
-              playerField: playerFieldRef.current, setPlayerField,
-              aiField: aiFieldRef.current, setAiField,
-              playerGraveyard: playerGraveyardRef.current, setPlayerGraveyard,
-              aiGraveyard: aiGraveyardRef.current, setAiGraveyard
+              playerField: playerFieldRef.current, setPlayerField: setPlayerField,
+              aiField: aiFieldRef.current, setAiField: setAiField,
+              playerGraveyard: playerGraveyardRef.current, setPlayerGraveyard: setPlayerGraveyard,
+              aiGraveyard: aiGraveyardRef.current, setAiGraveyard: setAiGraveyard
             })
             await new Promise(r => setTimeout(r, 1000))
           }
@@ -552,7 +759,6 @@ function Duel() {
             console.log("AI activating Dark Hole")
             const newHand = aiHandRef.current.filter((_, i) => i !== darkHoleIndex)
             setAiHand(newHand)
-            aiHandRef.current = newHand
             
             setAiGraveyard(prev => [...prev, card])
             // Destroy all monsters
@@ -560,16 +766,8 @@ function Duel() {
             const aDestroyed = aiFieldRef.current.monsters.filter(m => m !== null)
             setPlayerGraveyard(prev => [...prev, ...pDestroyed])
             setAiGraveyard(prev => [...prev, ...aDestroyed])
-            setPlayerField(prev => {
-               const next = { ...prev, monsters: new Array(5).fill(null) }
-               playerFieldRef.current = next
-               return next
-            })
-            setAiField(prev => {
-               const next = { ...prev, monsters: new Array(5).fill(null) }
-               aiFieldRef.current = next
-               return next
-            })
+            setPlayerField(prev => ({ ...prev, monsters: new Array(5).fill(null) }))
+            setAiField(prev => ({ ...prev, monsters: new Array(5).fill(null) }))
             await new Promise(r => setTimeout(r, 1000))
           }
         }
@@ -586,23 +784,18 @@ function Duel() {
           
           const newHand = aiHandRef.current.filter((_, i) => i !== cohIndex)
           setAiHand(newHand)
-          aiHandRef.current = newHand
           setAiGraveyard(prev => [...prev, card])
           
           // Take control
           setPlayerField(prev => {
             const newMonsters = [...prev.monsters]
             newMonsters[target.index] = null
-            const next = { ...prev, monsters: newMonsters }
-            playerFieldRef.current = next
-            return next
+            return { ...prev, monsters: newMonsters }
           })
           setAiField(prev => {
             const newMonsters = [...prev.monsters]
             newMonsters[emptyAiZone] = { ...target.card, returnAtEndTurn: true, originalOwner: 'player' }
-            const next = { ...prev, monsters: newMonsters }
-            aiFieldRef.current = next
-            return next
+            return { ...prev, monsters: newMonsters }
           })
           await new Promise(r => setTimeout(r, 1000))
         }
@@ -624,7 +817,6 @@ function Duel() {
             
             const newHand = aiHandRef.current.filter((_, i) => i !== rebornIndex)
             setAiHand(newHand)
-            aiHandRef.current = newHand
             
             // Remove from correct GY
             if (bestTarget.owner === 'ai') {
@@ -648,9 +840,7 @@ function Duel() {
             setAiField(prev => {
               const newMonsters = [...prev.monsters]
               newMonsters[aiEmptyZone] = { ...bestTarget.card, faceUp: true, position: 'attack', justSummoned: false }
-              const next = { ...prev, monsters: newMonsters }
-              aiFieldRef.current = next
-              return next
+              return { ...prev, monsters: newMonsters }
             })
             await new Promise(r => setTimeout(r, 1000))
           }
@@ -667,13 +857,12 @@ function Duel() {
           if ((myLP < oppLP && aiMonsters.length > 0) || (myLP > oppLP && pMonsters.length > 0)) {
             const card = aiHandRef.current[megaIndex]
             setAiHand(prev => prev.filter((_, i) => i !== megaIndex))
-            aiHandRef.current = aiHandRef.current.filter((_, i) => i !== megaIndex)
             setAiGraveyard(prev => [...prev, card])
             handleMegamorph(false) // Trigger AI logic for Megamorph
             await new Promise(r => setTimeout(r, 1000))
           }
         }
-
+ 
         // 5. Set remaining Traps
         const trapIndex = aiHandRef.current.findIndex(c => c.type.includes('Trap'))
         const emptySpellZone = aiFieldRef.current.spells.findIndex(s => s === null)
@@ -681,14 +870,11 @@ function Duel() {
           const card = aiHandRef.current[trapIndex]
           const newHand = aiHandRef.current.filter((_, i) => i !== trapIndex)
           setAiHand(newHand)
-          aiHandRef.current = newHand
           
           setAiField(prev => {
             const newSpells = [...prev.spells]
             newSpells[emptySpellZone] = { ...card, faceUp: false, canActivate: false }
-            const next = { ...prev, spells: newSpells }
-            aiFieldRef.current = next
-            return next
+            return { ...prev, spells: newSpells }
           })
           await new Promise(r => setTimeout(r, 1000))
         }
@@ -704,8 +890,9 @@ function Duel() {
           await new Promise(r => setTimeout(r, 3000))
         }
       } catch (err) {
-        console.error("Error in aiActionSpells:", err)
+        console.error("[AI Spells] Error:", err)
       } finally {
+        console.log("[AI Spells] Completed")
         setTimeout(resolve, 500)
       }
     })
@@ -721,24 +908,34 @@ function Duel() {
         }
 
         // Check Swords of Revealing Light
-        if (swordsActive.active && swordsActive.owner === 'player') {
-          console.log("AI cannot attack due to Swords of Revealing Light")
+        if (swordsActiveRef.current.active && swordsActiveRef.current.owner === 'player') {
+          console.log("[AI Battle] Cannot attack due to Swords of Revealing Light")
           setTimeout(resolve, 1000)
           return
         }
 
+        console.log(`[AI Battle] Starting Battle Phase. Current Turn Count: ${duelTurnCountRef.current}`)
         setCurrentPhase('BATTLE')
+        // Give a small delay for the system to recognize the phase change
+        await new Promise(r => setTimeout(r, 1000))
         
         const aiMonsters = aiFieldRef.current.monsters
           .map((m, i) => m ? { card: m, index: i } : null)
-          .filter(m => m !== null && m.card.position === 'attack')
+          .filter(m => m !== null && m.card.position && m.card.position.toLowerCase() === 'attack')
         
-        console.log(`AI Battle Phase: Found ${aiMonsters.length} monsters in attack position. Turn: ${duelTurnCount}`)
+        console.log(`[AI Battle] Found ${aiMonsters.length} monsters in attack position. Details:`, aiMonsters.map(m => m.card.name))
 
-        if (aiMonsters.length === 0 || duelTurnCount === 1) {
-          if (duelTurnCount === 1) console.log("AI cannot attack on Turn 1")
-          else console.log("AI has no monsters in attack position to attack with")
+        if (aiMonsters.length === 0 || duelTurnCountRef.current === 1) {
+          if (duelTurnCountRef.current === 1) console.log("[AI Battle] Cannot attack on Turn 1")
+          else console.log("[AI Battle] No monsters in attack position to attack with")
           setTimeout(resolve, 1000)
+          return
+        }
+
+        // Check if current phase is still BATTLE (might have been changed by a trap/effect)
+        if (currentPhaseRef.current !== 'BATTLE') {
+          console.log("[AI Battle] Phase changed unexpectedly to:", currentPhaseRef.current)
+          resolve()
           return
         }
 
@@ -757,7 +954,7 @@ function Duel() {
           
           // Lethal check: If direct attack wins, do it
           if (playerMonsters.length === 0) {
-            handleDirectAttack(attacker)
+            await handleDirectAttack(attacker)
             await new Promise(r => setTimeout(r, 2000))
             continue
           }
@@ -778,11 +975,15 @@ function Duel() {
           })
 
           if (beatableMonsters.length > 0) {
-            handleBattle(attacker, beatableMonsters[0])
+            console.log(`AI attacking ${beatableMonsters[0].card.name} with ${attacker.card.name}`)
+            await handleBattle(attacker, beatableMonsters[0])
             await new Promise(r => setTimeout(r, 2500))
+          } else {
+            console.log(`AI ${attacker.card.name} cannot beat any player monster safely.`)
           }
         }
         
+        console.log("[AI Battle] Phase loop complete. Resolving.")
         setTimeout(() => {
           setCurrentPhase('MAIN2')
           resolve()
@@ -965,14 +1166,20 @@ function Duel() {
   useEffect(() => {
     if (gameOver) return
 
+    const phaseId = `${currentTurn}-${duelTurnCount}-${currentPhase}`
+    if (phaseInProgressRef.current === phaseId) return
+    phaseInProgressRef.current = phaseId
+
     if (currentPhase === 'DRAW') {
-      console.log(`Phase: DRAW - Turn: ${currentTurn}`)
+      console.log(`Phase: DRAW - Turn: ${currentTurn} (Count: ${duelTurnCount})`)
       
       // Rules: First player doesn't draw on turn 1
       if (duelTurnCount === 1 && !firstTurnDrawSkipped) {
         console.log("Turn 1: Skipping draw for starting player")
         setFirstTurnDrawSkipped(true)
-        setTimeout(() => setCurrentPhase('STANDBY'), 1000)
+        setTimeout(() => {
+          setCurrentPhase(prev => prev === 'DRAW' ? 'STANDBY' : prev)
+        }, 1000)
         return
       }
 
@@ -980,18 +1187,29 @@ function Duel() {
       if (isSkipped) {
         alert(`${currentTurn === 'player' ? 'Bạn' : 'Đối thủ'} bỏ qua Draw Phase!`)
         setSkipNextDraw(prev => ({ ...prev, [currentTurn]: false }))
-        setTimeout(() => setCurrentPhase('STANDBY'), 1000)
+        setTimeout(() => {
+          setCurrentPhase(prev => prev === 'DRAW' ? 'STANDBY' : prev)
+        }, 1000)
       } else {
         // Draw card
         setTimeout(() => {
-          drawCard(currentTurn)
-          setTimeout(() => setCurrentPhase('STANDBY'), 1000)
+          // Re-check turn and phase before drawing
+          if (currentTurnRef.current === currentTurn && currentPhaseRef.current === 'DRAW') {
+            drawCard(currentTurn)
+            setTimeout(() => {
+              setCurrentPhase(prev => prev === 'DRAW' ? 'STANDBY' : prev)
+            }, 1000)
+          }
         }, 500)
       }
     } else if (currentPhase === 'STANDBY') {
       console.log(`Phase: STANDBY - Turn: ${currentTurn}`)
-      // Handle standby effects here (e.g. Swords of Revealing Light counter)
-      setTimeout(() => setCurrentPhase('MAIN1'), 1000)
+      // Handle standby effects here
+      handleSwordsCounter(currentTurn)
+      
+      setTimeout(() => {
+        setCurrentPhase(prev => prev === 'STANDBY' ? 'MAIN1' : prev)
+      }, 1000)
     }
   }, [currentPhase, currentTurn, gameOver, duelTurnCount, firstTurnDrawSkipped, skipNextDraw])
 
@@ -3525,28 +3743,45 @@ function Duel() {
   }
 
   const handleBattle = (attacker, defender) => {
-    if (attacker.card.cannotAttack) {
-      alert(`${attacker.card.name} không thể tấn công do ảnh hưởng của hiệu ứng!`)
-      return
-    }
+    return new Promise((resolve) => {
+      if (attacker.card.cannotAttack) {
+        alert(`${attacker.card.name} không thể tấn công do ảnh hưởng của hiệu ứng!`)
+        resolve()
+        return
+      }
 
-    const isPlayerAttacking = currentTurn === 'player'
-    const defenderField = isPlayerAttacking ? aiField : playerField
-    const hasFaceDownSpells = defenderField.spells.some(s => s && !s.faceUp)
+      // Check Swords of Revealing Light
+      if (swordsActiveRef.current.active && swordsActiveRef.current.owner !== currentTurn) {
+        alert(`${currentTurn === 'player' ? 'Bạn' : 'AI'} không thể tấn công do Swords of Revealing Light!`)
+        resolve()
+        return
+      }
 
-    if (hasFaceDownSpells) {
-      setChainPrompt({
-        active: true,
-        player: isPlayerAttacking ? 'ai' : 'player',
-        sourceAction: `${attacker.card.name} tuyên bố tấn công!`,
-        onResolve: () => executeBattleCalculation(attacker, defender),
-        onCancel: () => executeBattleCalculation(attacker, defender),
-        context: { type: 'attack', attacker, defender }
-      })
-      return
-    }
+      const isPlayerAttacking = currentTurn === 'player'
+      const defenderField = isPlayerAttacking ? aiField : playerField
+      const hasFaceDownSpells = defenderField.spells.some(s => s && !s.faceUp)
 
-    executeBattleCalculation(attacker, defender)
+      if (hasFaceDownSpells) {
+        setChainPrompt({
+          active: true,
+          player: isPlayerAttacking ? 'ai' : 'player',
+          sourceAction: `${attacker.card.name} tuyên bố tấn công!`,
+          onResolve: () => {
+            executeBattleCalculation(attacker, defender)
+            resolve()
+          },
+          onCancel: () => {
+            executeBattleCalculation(attacker, defender)
+            resolve()
+          },
+          context: { type: 'attack', attacker, defender }
+        })
+        return
+      }
+
+      executeBattleCalculation(attacker, defender)
+      resolve()
+    })
   }
 
   const executeBattleCalculation = (attacker, defender) => {
@@ -3586,8 +3821,6 @@ function Duel() {
           setDefenderField(prev => {
             const next = { ...prev, monsters: [...prev.monsters] }
             next.monsters[defender.index] = null
-            if (isPlayerAttacking) aiFieldRef.current = next
-            else playerFieldRef.current = next
             return next
           })
           setDefenderGY(prev => [...prev, defenderCard])
@@ -3601,8 +3834,6 @@ function Duel() {
           setAttackerField(prev => {
             const next = { ...prev, monsters: [...prev.monsters] }
             next.monsters[attacker.index] = null
-            if (isPlayerAttacking) playerFieldRef.current = next
-            else aiFieldRef.current = next
             return next
           })
           setAttackerGY(prev => [...prev, attackerCard])
@@ -3615,15 +3846,11 @@ function Duel() {
           setAttackerField(prev => {
             const next = { ...prev, monsters: [...prev.monsters] }
             next.monsters[attacker.index] = null
-            if (isPlayerAttacking) playerFieldRef.current = next
-            else aiFieldRef.current = next
             return next
           })
           setDefenderField(prev => {
             const next = { ...prev, monsters: [...prev.monsters] }
             next.monsters[defender.index] = null
-            if (isPlayerAttacking) aiFieldRef.current = next
-            else playerFieldRef.current = next
             return next
           })
           setAttackerGY(prev => [...prev, attackerCard])
@@ -3636,8 +3863,6 @@ function Duel() {
           setDefenderField(prev => {
             const next = { ...prev, monsters: [...prev.monsters] }
             next.monsters[defender.index] = null
-            if (isPlayerAttacking) aiFieldRef.current = next
-            else playerFieldRef.current = next
             return next
           })
           setDefenderGY(prev => [...prev, defenderCard])
@@ -3657,8 +3882,6 @@ function Duel() {
       setDefenderField(prev => {
         const next = { ...prev, monsters: [...prev.monsters] }
         next.monsters[defender.index] = { ...defenderCard, faceUp: true }
-        if (isPlayerAttacking) aiFieldRef.current = next
-        else playerFieldRef.current = next
         return next
       })
       handleFlipEffect(defenderCard, defender.index, defenderOwner)
@@ -3669,8 +3892,6 @@ function Duel() {
         setDefenderField(prev => {
           const next = { ...prev, monsters: [...prev.monsters] }
           next.monsters[defender.index] = null
-          if (isPlayerAttacking) aiFieldRef.current = next
-          else playerFieldRef.current = next
           return next
         })
       } else if (atkVsDef < 0) {
@@ -3690,35 +3911,55 @@ function Duel() {
   }
 
   const handleDirectAttack = (aiAttacker = null) => {
-    const attacker = aiAttacker || selectedAttacker
-    if (!attacker) return
-    const attackerCard = attacker.card
-    const isPlayerAttacking = currentTurn === 'player'
-    
-    // Check if opponent has no monsters
-    const opponentField = isPlayerAttacking ? aiField : playerField
-    const hasMonsters = opponentField.monsters.some(m => m !== null)
-    
-    if (hasMonsters) {
-      alert('Đối thủ còn quái thú trên sân!')
-      return
-    }
+    return new Promise((resolve) => {
+      const attacker = aiAttacker || selectedAttacker
+      if (!attacker) {
+        resolve()
+        return
+      }
+      const attackerCard = attacker.card
+      const isPlayerAttacking = currentTurn === 'player'
+      
+      // Check Swords of Revealing Light
+      if (swordsActiveRef.current.active && swordsActiveRef.current.owner !== currentTurn) {
+        alert(`${isPlayerAttacking ? 'Bạn' : 'AI'} không thể tấn công trực tiếp do Swords of Revealing Light!`)
+        resolve()
+        return
+      }
+      
+      // Check if opponent has no monsters
+      const opponentField = isPlayerAttacking ? aiField : playerField
+      const hasMonsters = opponentField.monsters.some(m => m !== null)
+      
+      if (hasMonsters) {
+        alert('Đối thủ còn quái thú trên sân!')
+        resolve()
+        return
+      }
 
-    const hasFaceDownSpells = opponentField.spells.some(s => s && !s.faceUp)
+      const hasFaceDownSpells = opponentField.spells.some(s => s && !s.faceUp)
 
-    if (hasFaceDownSpells) {
-      setChainPrompt({
-        active: true,
-        player: isPlayerAttacking ? 'ai' : 'player',
-        sourceAction: `${attackerCard.name} tấn công trực tiếp!`,
-        onResolve: () => executeDirectAttack(aiAttacker),
-        onCancel: () => executeDirectAttack(aiAttacker),
-        context: { type: 'direct_attack', attacker }
-      })
-      return
-    }
+      if (hasFaceDownSpells) {
+        setChainPrompt({
+          active: true,
+          player: isPlayerAttacking ? 'ai' : 'player',
+          sourceAction: `${attackerCard.name} tấn công trực tiếp!`,
+          onResolve: () => {
+            executeDirectAttack(aiAttacker)
+            resolve()
+          },
+          onCancel: () => {
+            executeDirectAttack(aiAttacker)
+            resolve()
+          },
+          context: { type: 'direct_attack', attacker }
+        })
+        return
+      }
 
-    executeDirectAttack(aiAttacker)
+      executeDirectAttack(aiAttacker)
+      resolve()
+    })
   }
 
   const executeDirectAttack = (aiAttacker = null) => {
@@ -3737,10 +3978,10 @@ function Duel() {
     const attackerCard = attacker.card
     
     // Re-check monsters
-    const opponentField = isPlayerAttacking ? aiFieldRef.current : playerFieldRef.current
-    const hasMonsters = opponentField.monsters.some(m => m !== null)
+    const currentOpponentField = isPlayerAttacking ? aiFieldRef.current : playerFieldRef.current
+    const hasMonsters = currentOpponentField.monsters.some(m => m !== null)
     if (hasMonsters) {
-      alert('Tấn công trực tiếp bị hủy vì đối thủ có quái thú mởi trên sân!')
+      alert('Tấn công trực tiếp bị hủy vì đối thủ có quái thú mới trên sân!')
       if (!aiAttacker) setSelectedAttacker(null)
       return
     }
@@ -3784,9 +4025,10 @@ function Duel() {
     }
 
     // Animate LP countdown
-    const currentLP = target === 'player' ? playerLP : aiLP
-    const targetLP = currentLP - damage
-    const setLP = target === 'player' ? setPlayerLP : setAiLP
+    const isPlayer = target === 'player'
+    const currentLP = isPlayer ? playerLPRef.current : aiLPRef.current
+    const targetLP = Math.max(0, currentLP - damage)
+    const setLP = isPlayer ? setPlayerLP : setAiLP
     const duration = 1800 // 1.8 seconds
     const steps = 40
     const decrement = damage / steps
@@ -3795,7 +4037,7 @@ function Duel() {
     let step = 0
     const timer = setInterval(() => {
       step++
-      const newLP = Math.max(0, Math.round(currentLP - (decrement * step)))
+      const newLP = Math.max(targetLP, Math.round(currentLP - (decrement * step)))
       setLP(newLP)
       
       if (step >= steps || newLP <= targetLP) {
@@ -4311,9 +4553,9 @@ function Duel() {
             onClick={() => {
               if (currentTurn === 'player') {
                 if (currentPhase === 'MAIN1') {
-                  setCurrentPhase('BATTLE')
+                  setCurrentPhase(prev => prev === 'MAIN1' ? 'BATTLE' : prev)
                 } else if (currentPhase === 'BATTLE') {
-                  setCurrentPhase('MAIN2')
+                  setCurrentPhase(prev => prev === 'BATTLE' ? 'MAIN2' : prev)
                 }
                 setSelectedAttacker(null)
               }
